@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "RKAssetLoading",
+        "repositoryURL": "https://github.com/Reality-Dev/RealityKit-Asset-Loading",
+        "state": {
+          "branch": null,
+          "revision": "686fdbbd81eb81b32ec0b191f4ce72250a498935",
+          "version": "1.0.3"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
