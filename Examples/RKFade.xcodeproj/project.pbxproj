@@ -15,7 +15,6 @@
 		55ECE094273C82E000842DCC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55ECE08D273C82E000842DCC /* ContentView.swift */; };
 		55ECE09A273C850C00842DCC /* RKFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55ECE099273C850C00842DCC /* RKFade.swift */; };
 		55ECE09C273C853600842DCC /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 55ECE09B273C853600842DCC /* README.md */; };
-		55ECE0A2273C887900842DCC /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 55ECE0A1273C887900842DCC /* LICENSE.txt */; };
 		55ECE0B1273C8E6E00842DCC /* RKAssetLoading in Frameworks */ = {isa = PBXBuildFile; productRef = 55ECE0B0273C8E6E00842DCC /* RKAssetLoading */; };
 /* End PBXBuildFile section */
 
@@ -30,7 +29,6 @@
 		55ECE08E273C82E000842DCC /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		55ECE099273C850C00842DCC /* RKFade.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RKFade.swift; sourceTree = "<group>"; };
 		55ECE09B273C853600842DCC /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		55ECE0A1273C887900842DCC /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,7 +70,6 @@
 				55ECE088273C82E000842DCC /* Assets.xcassets */,
 				55ECE089273C82E000842DCC /* Preview Content */,
 				55ECE08E273C82E000842DCC /* Info.plist */,
-				55ECE0A0273C887900842DCC /* LICENSE */,
 				55ECE098273C850C00842DCC /* RKFade */,
 			);
 			path = RKFade;
@@ -93,15 +90,6 @@
 			);
 			name = RKFade;
 			path = ../../Sources/RKFade;
-			sourceTree = "<group>";
-		};
-		55ECE0A0273C887900842DCC /* LICENSE */ = {
-			isa = PBXGroup;
-			children = (
-				55ECE0A1273C887900842DCC /* LICENSE.txt */,
-			);
-			name = LICENSE;
-			path = ../../Sources/LICENSE;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -171,7 +159,6 @@
 				55ECE091273C82E000842DCC /* Preview Assets.xcassets in Resources */,
 				55ECE090273C82E000842DCC /* Assets.xcassets in Resources */,
 				55ECE09C273C853600842DCC /* README.md in Resources */,
-				55ECE0A2273C887900842DCC /* LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
