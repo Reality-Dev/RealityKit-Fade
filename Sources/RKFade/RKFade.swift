@@ -19,7 +19,7 @@ public struct FadeComponent: Component {
 
 public class FadeSystem: System {
     
-    static func register(){
+    public static func register(){
         FadeSystem.registerSystem()
         FadeComponent.registerComponent()
     }
