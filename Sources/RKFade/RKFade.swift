@@ -15,6 +15,12 @@ public struct FadeComponent: Component {
     public enum FadeType {
         case fadeIn, fadeOut
     }
+    
+    public init(fadeType: FadeType,
+    fadeDuration: Float = 5){
+        self.fadeType = fadeType
+        self.fadeDuration = fadeDuration
+    }
 }
 
 
