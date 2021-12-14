@@ -33,4 +33,4 @@ Add the URL of this repository to your Xcode 11+ Project under:
 - Add `import RKFade` to the top of your swift file to start.
 - Create an entity that uses PhysicallyBasedMaterial, CustomMaterial, or UnlitMaterial.
     - Materials on entities loaded from usdz files are PhysicallyBasedMaterials.
-- Call .fadeIn() or .fadeOut() on the entity, optionally passing in a fade duration.
+- Call `.fadeIn()` or `.fadeOut()` on the entity, optionally passing in a fade duration.

@@ -15,13 +15,17 @@ class ARSUIView: ARView {
     override func didMoveToSuperview() {
         super.didMoveToSuperview()
         
-        RKAssetLoader.loadEntityAsync(named: "gold_star"){ goldStar in
-            
-            self.addStarToScene(goldStar)
-            
-            goldStar.fadeIn()
-            
-        }
+        let star = ModelEntity.makeBox()
+        addStarToScene(star)
+        star.fadeIn()
+        
+//        RKAssetLoader.loadEntityAsync(named: "gold_star"){ goldStar in
+//
+//            self.addStarToScene(goldStar)
+//
+//            goldStar.fadeIn()
+//
+//        }
     }
     
     
@@ -33,6 +37,6 @@ class ARSUIView: ARView {
         
         anchorEnt.addChild(star)
         star.scale = .init(repeating: 3)
-        star.position = [ 0, 0, -1]
+        star.position = [ 0, 0, -4]
     }
 }

@@ -6,12 +6,13 @@
 
 import Foundation
 import RealityKit
+import UIKit
 
 ///MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
 public struct FadeComponent: Component {
     var fadeType: FadeType
     var fadeDuration: Float = 5
-    enum FadeType {
+    public enum FadeType {
         case fadeIn, fadeOut
     }
 }
@@ -49,6 +50,10 @@ public class FadeSystem: System {
                     return updateUnlitMaterial(unlitMat,
                                         entity: entity,
                                         fadeComp: fadeComp)
+                } else if let simpleMat = $0 as? SimpleMaterial {
+                    return updateSimpleMaterial(simpleMat,
+                                        entity: entity,
+                                        fadeComp: fadeComp)
                 } else {
                     return $0
                 }
@@ -79,6 +84,30 @@ public class FadeSystem: System {
             entity.components[FadeComponent.self] = nil //Stop fading.
         }
         return blendingOpacity
+    }
+    
+    private func updateSimpleMaterial(_ simpleMat: SimpleMaterial,
+                                      entity: Entity,
+                                      fadeComp: FadeComponent) -> SimpleMaterial {
+        
+        var simpleMat = simpleMat
+        var opacity: Float = fadeComp.fadeType == .fadeIn ? 1.0 : 0.0
+        var baseColor = UIColor.white
+        switch simpleMat.baseColor {
+        case .color(let color):
+            baseColor = color
+            opacity = Float(color.rgba.alpha)
+        case .texture(_):
+            break
+        @unknown default:
+            break
+        }
+        let newOpacity = self.updateOpacity(opacity: opacity,
+                                                entity: entity,
+                                                fadeComp: fadeComp)
+        simpleMat.baseColor = .color(baseColor.withAlphaComponent(CGFloat(newOpacity)))
+        simpleMat.tintColor = Material.Color.white.withAlphaComponent(0.995)
+        return simpleMat
     }
     
     
@@ -169,7 +198,17 @@ public class FadeSystem: System {
 }
 
 
+public extension UIColor {
+    var rgba: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        getRed(&red, green: &green, blue: &blue, alpha: &alpha)
 
+        return (red, green, blue, alpha)
+    }
+}
 
 
 public extension Entity {
