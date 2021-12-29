@@ -15,28 +15,28 @@ class ARSUIView: ARView {
     override func didMoveToSuperview() {
         super.didMoveToSuperview()
         
-        let star = ModelEntity.makeBox()
-        addStarToScene(star)
-        star.fadeIn()
+        //Does Not work with Simple Materials.
+//        let box = ModelEntity.makeBox()
+//        addEntityToScene(box)
+//        box.fadeIn()
         
-//        RKAssetLoader.loadEntityAsync(named: "gold_star"){ goldStar in
-//
-//            self.addStarToScene(goldStar)
-//
-//            goldStar.fadeIn()
-//
-//        }
+        RKAssetLoader.loadEntityAsync(named: "gold_star"){ goldStar in
+
+            self.addEntityToScene(goldStar)
+
+            goldStar.fadeIn()
+        }
     }
     
     
-    func addStarToScene(_ star: Entity){
+    func addEntityToScene(_ entity: Entity){
         
         let anchorEnt = AnchorEntity() //defaults to 0,0,0 in world space.
         
         self.scene.addAnchor(anchorEnt)
         
-        anchorEnt.addChild(star)
-        star.scale = .init(repeating: 3)
-        star.position = [ 0, 0, -4]
+        anchorEnt.addChild(entity)
+        entity.scale = .init(repeating: 3)
+        entity.position = [ 0, 0, -4]
     }
 }

@@ -10,6 +10,8 @@ import UIKit
 
 ///MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
 public struct FadeComponent: Component {
+    static var isRegistered = false
+    
     var fadeType: FadeType
     var fadeDuration: Float = 5
     public enum FadeType {
@@ -17,19 +19,21 @@ public struct FadeComponent: Component {
     }
     
     public init(fadeType: FadeType,
-    fadeDuration: Float = 5){
+                fadeDuration: Float = 5){
+        
         self.fadeType = fadeType
         self.fadeDuration = fadeDuration
+        
+        if Self.isRegistered == false {
+            Self.isRegistered = true
+            FadeSystem.registerSystem()
+            FadeComponent.registerComponent()
+        }
     }
 }
 
 
 public class FadeSystem: System {
-    
-    public static func register(){
-        FadeSystem.registerSystem()
-        FadeComponent.registerComponent()
-    }
     
     required public init(scene: RealityKit.Scene) {}
     

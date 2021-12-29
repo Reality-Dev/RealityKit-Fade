@@ -2,8 +2,6 @@
 
 This package enables easy, convenient fading in and fading out in RealityKit.
 
-Be sure to call `FadeSystem.register()` (Not `FadeSystem.registerSystem()`) before you use the fade component or any fade methods (preferrably register it when your app starts, as seen in the example project's AppDelegate), or the fading will not work.
-
 SimpleMaterial will not work - Materials must be PhysicallyBased, Custom, or Unlit.
 You can use this to see what kinds of materials your entity uses:
 ``` swift
