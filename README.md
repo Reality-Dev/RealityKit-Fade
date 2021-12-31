@@ -32,3 +32,8 @@ Add the URL of this repository to your Xcode 11+ Project under:
 - Create an entity that uses PhysicallyBasedMaterial, CustomMaterial, or UnlitMaterial.
     - Materials on entities loaded from usdz files are PhysicallyBasedMaterials.
 - Call `.fadeIn()` or `.fadeOut()` on the entity, optionally passing in a fade duration.
+
+
+## More
+
+Pull Requests are welcome and encouraged.
