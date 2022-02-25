@@ -12,6 +12,8 @@ import UIKit
 public struct FadeComponent: Component {
     static var isRegistered = false
     
+    fileprivate var completedDuration: TimeInterval = 0
+    
     var fadeType: FadeType
     var fadeDuration: Float = 5
     public enum FadeType {
@@ -41,10 +43,17 @@ public class FadeSystem: System {
     private static let fadeQuery = EntityQuery(where: .has(FadeComponent.self))
     
     public func update(context: SceneUpdateContext) {
+        
+        let deltaTime = context.deltaTime
+        
         //Query the scene for all entities that have a FadeComponent.
         context.scene.performQuery(Self.fadeQuery).forEach { entity in
             
-            guard let fadeComp = entity.components[FadeComponent.self] as? FadeComponent else {return}
+            guard var fadeComp = entity.components[FadeComponent.self] as? FadeComponent else {return}
+            
+            fadeComp.completedDuration += deltaTime
+            
+            entity.components[FadeComponent.self] = fadeComp
         
             entity.modifyMaterials {
                 if let customMat = $0 as? CustomMaterial  {
@@ -71,29 +80,27 @@ public class FadeSystem: System {
         }
     }
     
-    private func updateOpacity(opacity: Float,
-                               entity: Entity,
+    private func updateOpacity(entity: Entity,
                                fadeComp: FadeComponent) -> Float {
-        var opacity = opacity
-        //Assuming 60 fps framerate, this is the number of frames required to complete the fade.
-        let fadeFrames = 60 * fadeComp.fadeDuration
-        var blendingOpacity: Float
-        if (fadeComp.fadeType == .fadeIn && opacity < 1)
+        var opacity: Float
+
+        let percentCompleted = (Float(fadeComp.completedDuration)  / fadeComp.fadeDuration)
+        
+        
+        if (fadeComp.fadeType == .fadeIn && percentCompleted < 1)
         {
-            opacity += 1 / fadeFrames
-            blendingOpacity =  min(1, opacity)
+            opacity =  min(1, percentCompleted)
             
-        } else if (fadeComp.fadeType == .fadeOut && opacity > 0) {
+        } else if (fadeComp.fadeType == .fadeOut && percentCompleted < 1) {
             
-            opacity -= 1 / fadeFrames
-            blendingOpacity = max(0, opacity)
+            opacity = max(0, 1 - percentCompleted)
             
         } else {
             //The fade has completed
-            blendingOpacity = fadeComp.fadeType == .fadeIn ? 1.0 : 0.0
+            opacity = fadeComp.fadeType == .fadeIn ? 1.0 : 0.0
             entity.components[FadeComponent.self] = nil //Stop fading.
         }
-        return blendingOpacity
+        return opacity
     }
     
     private func updateSimpleMaterial(_ simpleMat: SimpleMaterial,
@@ -101,19 +108,16 @@ public class FadeSystem: System {
                                       fadeComp: FadeComponent) -> SimpleMaterial {
         
         var simpleMat = simpleMat
-        var opacity: Float = fadeComp.fadeType == .fadeIn ? 1.0 : 0.0
         var baseColor = UIColor.white
         switch simpleMat.baseColor {
         case .color(let color):
             baseColor = color
-            opacity = Float(color.rgba.alpha)
         case .texture(_):
             break
         @unknown default:
             break
         }
-        let newOpacity = self.updateOpacity(opacity: opacity,
-                                                entity: entity,
+        let newOpacity = self.updateOpacity(entity: entity,
                                                 fadeComp: fadeComp)
         simpleMat.baseColor = .color(baseColor.withAlphaComponent(CGFloat(newOpacity)))
         simpleMat.tintColor = Material.Color.white.withAlphaComponent(0.995)
@@ -125,11 +129,9 @@ public class FadeSystem: System {
                                       entity: Entity,
                                       fadeComp: FadeComponent) -> CustomMaterial {
         
-        let completion = { (customMat: CustomMaterial,
-                            opacity: Float) -> RealityKit.CustomMaterial in
+        let completion = { (customMat: CustomMaterial) -> RealityKit.CustomMaterial in
             var customMat = customMat
-            let newOpacity = self.updateOpacity(opacity: opacity,
-                                                entity: entity,
+            let newOpacity = self.updateOpacity(entity: entity,
                                                 fadeComp: fadeComp)
             customMat.blending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
             return customMat
@@ -140,9 +142,9 @@ public class FadeSystem: System {
         case .opaque:
             let opacity: Float = fadeComp.fadeType == .fadeIn ? 0.0 : 1.0
             customMat.blending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: opacity))
-            return completion(customMat, opacity)
-        case .transparent(opacity: let opacity):
-            return completion(customMat, opacity.scale)
+            return completion(customMat)
+        case .transparent(opacity: _):
+            return completion(customMat)
         @unknown default:
             break
         }
@@ -153,11 +155,9 @@ public class FadeSystem: System {
                                       entity: Entity,
                                       fadeComp: FadeComponent) -> PhysicallyBasedMaterial {
         
-        let completion = { (customMat: PhysicallyBasedMaterial,
-                            opacity: Float) -> RealityKit.PhysicallyBasedMaterial in
+        let completion = { (customMat: PhysicallyBasedMaterial) -> RealityKit.PhysicallyBasedMaterial in
             var pbrMat = pbrMat
-            let newOpacity = self.updateOpacity(opacity: opacity,
-                                                entity: entity,
+            let newOpacity = self.updateOpacity(entity: entity,
                                                 fadeComp: fadeComp)
             pbrMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: newOpacity))
             return pbrMat
@@ -168,9 +168,9 @@ public class FadeSystem: System {
         case .opaque:
             let opacity: Float = fadeComp.fadeType == .fadeIn ? 0.0 : 1.0
             pbrMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: opacity))
-            return completion(pbrMat, opacity)
-        case .transparent(opacity: let opacity):
-            return completion(pbrMat, opacity.scale)
+            return completion(pbrMat)
+        case .transparent(opacity: _):
+            return completion(pbrMat)
         @unknown default:
             break
         }
@@ -182,11 +182,9 @@ public class FadeSystem: System {
                                       entity: Entity,
                                       fadeComp: FadeComponent) -> UnlitMaterial {
         
-        let completion = { (unlitMat: UnlitMaterial,
-                            opacity: Float) -> RealityKit.UnlitMaterial in
+        let completion = { (unlitMat: UnlitMaterial) -> RealityKit.UnlitMaterial in
             var unlitMat = unlitMat
-            let newOpacity = self.updateOpacity(opacity: opacity,
-                                                entity: entity,
+            let newOpacity = self.updateOpacity(entity: entity,
                                                 fadeComp: fadeComp)
             unlitMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: newOpacity))
             return unlitMat
@@ -197,9 +195,9 @@ public class FadeSystem: System {
         case .opaque:
             let opacity: Float = fadeComp.fadeType == .fadeIn ? 0.0 : 1.0
             unlitMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: opacity))
-            return completion(unlitMat, opacity)
-        case .transparent(opacity: let opacity):
-            return completion(unlitMat, opacity.scale)
+            return completion(unlitMat)
+        case .transparent(opacity: _):
+            return completion(unlitMat)
         @unknown default:
             break
         }

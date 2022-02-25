@@ -20,14 +20,36 @@ class ARSUIView: ARView {
 //        addEntityToScene(box)
 //        box.fadeIn()
         
-        RKAssetLoader.loadEntityAsync(named: "gold_star"){ goldStar in
+        RKAssetLoader.loadEntityAsync(named: "gold_star"){[weak self] goldStar in
 
-            self.addEntityToScene(goldStar)
+            self?.addEntityToScene(goldStar)
 
-            goldStar.fadeIn()
+            //Here is a simple way to fade in an entity:
+            //entity.fadeIn()
+            
+            //Here is a way to repeatedly fade an entity in and out:
+            self?.fadeInAndOut(entity: goldStar)
         }
     }
     
+    func fadeInAndOut(entity: Entity,
+                      fadeDuration: TimeInterval = 4,
+                      fadeIn: Bool = false){
+        
+
+            if fadeIn {
+                entity.fadeIn(fadeDuration: Float(fadeDuration))
+                
+            } else {
+                entity.fadeOut(fadeDuration: Float(fadeDuration))
+            }
+        
+        Timer.scheduledTimer(withTimeInterval: fadeDuration, repeats: false){[weak self] timer in
+            guard entity.isEnabled else {timer.invalidate(); return}
+            
+            self?.fadeInAndOut(entity: entity, fadeIn: !fadeIn)
+        }
+    }
     
     func addEntityToScene(_ entity: Entity){
         
