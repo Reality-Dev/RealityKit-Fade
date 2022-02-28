@@ -15,13 +15,13 @@ public struct FadeComponent: Component {
     fileprivate var completedDuration: TimeInterval = 0
     
     var fadeType: FadeType
-    var fadeDuration: Float = 5
+    var fadeDuration: TimeInterval = 5
     public enum FadeType {
         case fadeIn, fadeOut
     }
     
     public init(fadeType: FadeType,
-                fadeDuration: Float = 5){
+                fadeDuration: TimeInterval = 5){
         
         self.fadeType = fadeType
         self.fadeDuration = fadeDuration
@@ -84,7 +84,7 @@ public class FadeSystem: System {
                                fadeComp: FadeComponent) -> Float {
         var opacity: Float
 
-        let percentCompleted = (Float(fadeComp.completedDuration)  / fadeComp.fadeDuration)
+        let percentCompleted = Float(fadeComp.completedDuration  / fadeComp.fadeDuration)
         
         
         if (fadeComp.fadeType == .fadeIn && percentCompleted < 1)
@@ -221,11 +221,11 @@ public extension UIColor {
 
 public extension Entity {
     
-    func fadeIn(fadeDuration: Float = 5){
+    func fadeIn(fadeDuration: TimeInterval = 5){
         self.components.set(FadeComponent(fadeType: .fadeIn, fadeDuration: fadeDuration))
     }
     
-    func fadeOut(fadeDuration: Float = 5){
+    func fadeOut(fadeDuration: TimeInterval = 5){
         self.components.set(FadeComponent(fadeType: .fadeOut, fadeDuration: fadeDuration))
     }
 

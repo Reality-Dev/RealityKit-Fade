@@ -38,10 +38,10 @@ class ARSUIView: ARView {
         
 
             if fadeIn {
-                entity.fadeIn(fadeDuration: Float(fadeDuration))
+                entity.fadeIn(fadeDuration: fadeDuration)
                 
             } else {
-                entity.fadeOut(fadeDuration: Float(fadeDuration))
+                entity.fadeOut(fadeDuration: fadeDuration)
             }
         
         Timer.scheduledTimer(withTimeInterval: fadeDuration, repeats: false){[weak self] timer in
