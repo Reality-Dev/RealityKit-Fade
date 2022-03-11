@@ -7,6 +7,7 @@
 import Foundation
 import RealityKit
 import UIKit
+import SwiftUI
 
 ///MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
 public struct FadeComponent: Component {
@@ -14,10 +15,30 @@ public struct FadeComponent: Component {
     
     fileprivate var completedDuration: TimeInterval = 0
     
+    fileprivate var isRecursive: Bool
+    
     var fadeType: FadeType
     var fadeDuration: TimeInterval = 5
+    
+    
     public enum FadeType {
         case fadeIn, fadeOut
+    }
+    
+    fileprivate init(fadeType: FadeType,
+                fadeDuration: TimeInterval = 5,
+                isRecursive: Bool){
+        
+        self.fadeType = fadeType
+        self.fadeDuration = fadeDuration
+        
+        self.isRecursive = isRecursive
+        
+        if Self.isRegistered == false {
+            Self.isRegistered = true
+            FadeSystem.registerSystem()
+            FadeComponent.registerComponent()
+        }
     }
     
     public init(fadeType: FadeType,
@@ -25,6 +46,8 @@ public struct FadeComponent: Component {
         
         self.fadeType = fadeType
         self.fadeDuration = fadeDuration
+        
+        self.isRecursive = false
         
         if Self.isRegistered == false {
             Self.isRegistered = true
@@ -98,7 +121,13 @@ public class FadeSystem: System {
         } else {
             //The fade has completed
             opacity = fadeComp.fadeType == .fadeIn ? 1.0 : 0.0
-            entity.components[FadeComponent.self] = nil //Stop fading.
+            
+            //Stop fading.
+            if fadeComp.isRecursive {
+                entity.visit(using: {$0.components.remove(FadeComponent.self)})
+            } else {
+                entity.components.remove(FadeComponent.self)
+            }
         }
         return opacity
     }
@@ -221,20 +250,29 @@ public extension UIColor {
 
 public extension Entity {
     
-    func fadeIn(fadeDuration: TimeInterval = 5){
-        self.components.set(FadeComponent(fadeType: .fadeIn, fadeDuration: fadeDuration))
+    func fadeIn(fadeDuration: TimeInterval = 5,
+                recursive: Bool = true){
+        self.components.set(FadeComponent(fadeType: .fadeIn,
+                                          fadeDuration: fadeDuration,
+                                          isRecursive: recursive))
+        if recursive {
+            for child in self.children {
+                    child.fadeIn(fadeDuration: fadeDuration,
+                                  recursive: true)
+                }
+        }
     }
     
-    func fadeOut(fadeDuration: TimeInterval = 5){
-        self.components.set(FadeComponent(fadeType: .fadeOut, fadeDuration: fadeDuration))
-    }
-
-    //From Underwater sample project
-    func modifyMaterials(_ closure: (Material) throws -> Material) rethrows {
-        try children.forEach { try $0.modifyMaterials(closure) }
-
-        guard var comp = components[ModelComponent.self] as? ModelComponent else { return }
-        comp.materials = try comp.materials.map { try closure($0) }
-        components[ModelComponent.self] = comp
+    func fadeOut(fadeDuration: TimeInterval = 5,
+                 recursive: Bool = true){
+        self.components.set(FadeComponent(fadeType: .fadeOut,
+                                          fadeDuration: fadeDuration,
+                                          isRecursive: recursive))
+        if recursive {
+            for child in self.children {
+                child.fadeOut(fadeDuration: fadeDuration,
+                              recursive: true)
+            }
+        }
     }
 }
