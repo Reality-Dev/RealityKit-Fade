@@ -24,4 +24,13 @@ public extension Entity {
         comp.materials = try comp.materials.map { try closure($0) }
         components[ModelComponent.self] = comp
     }
+    
+    ///Recursively searches through self and all descendants (depth first) for an Entity that satisfies the given predicate, Not just through the direct children.
+    func findEntity(where predicate: (Entity) -> Bool) -> Entity? {
+        if predicate(self) {return self}
+        for child in self.children {
+            if let satisfier = child.findEntity(where: predicate) {return satisfier}
+        }
+        return nil
+    }
 }

@@ -16,6 +16,8 @@ public struct FadeComponent: Component {
     
     fileprivate var isRecursive: Bool
     
+    fileprivate var completion: (() -> ())?
+    
     var fadeType: FadeType
     var fadeDuration: TimeInterval = 5
     
@@ -26,12 +28,15 @@ public struct FadeComponent: Component {
     
     fileprivate init(fadeType: FadeType,
                 fadeDuration: TimeInterval = 5,
-                isRecursive: Bool){
+                isRecursive: Bool,
+                completion: (() -> ())?){
         
         self.fadeType = fadeType
         self.fadeDuration = fadeDuration
         
         self.isRecursive = isRecursive
+        
+        self.completion = completion
         
         if Self.isRegistered == false {
             Self.isRegistered = true
@@ -119,6 +124,7 @@ public class FadeSystem: System {
             } else {
                 entity.components.remove(FadeComponent.self)
             }
+            fadeComp.completion?()
         }
         return opacity
     }
@@ -162,15 +168,35 @@ public extension Entity {
     ///   - fadeDuration: How long it takes for the entity to fade in, in seconds.
     ///   - recursive: If recursive the fade applies to all descendant entities as well. If not recursive it applies to only this entity and no descendants.
     func fadeIn(fadeDuration: TimeInterval = 5,
-                recursive: Bool = true){
-        self.components.set(FadeComponent(fadeType: .fadeIn,
-                                          fadeDuration: fadeDuration,
-                                          isRecursive: recursive))
+                recursive: Bool = true,
+                completion: (() -> ())? = nil){
+        
+        guard let modelEnt = self.findEntity(where: {$0.components.has(ModelComponent.self)})
+        else {return} //No entities with model components were found, so none can be faded.
+        
         if recursive {
-            for child in self.children {
-                    child.fadeIn(fadeDuration: fadeDuration,
-                                  recursive: true)
+            self.visit(using: {
+                $0.components.remove(FadeComponent.self)
+            })
+        }
+
+        //Completion should only be called once, when the top-most ancestor that has a model component finishes fading.
+            modelEnt.components.set(FadeComponent(fadeType: .fadeIn,
+                                              fadeDuration: fadeDuration,
+                                              isRecursive: recursive,
+                                              completion: completion))
+
+        if recursive {
+            self.visit(using: {
+                //Only entities with model components can fade.
+                if $0.components.has(ModelComponent.self) &&
+                    $0.components.has(FadeComponent.self) == false {
+                    $0.components.set(FadeComponent(fadeType: .fadeIn,
+                                                    fadeDuration: fadeDuration,
+                                                    isRecursive: recursive,
+                                                    completion: nil))
                 }
+            })
         }
     }
     
@@ -179,15 +205,35 @@ public extension Entity {
     ///   - fadeDuration: How long it takes for the entity to fade out, in seconds.
     ///   - recursive: If recursive the fade applies to all descendant entities as well. If not recursive it applies to only this entity and no descendants.
     func fadeOut(fadeDuration: TimeInterval = 5,
-                 recursive: Bool = true){
-        self.components.set(FadeComponent(fadeType: .fadeOut,
-                                          fadeDuration: fadeDuration,
-                                          isRecursive: recursive))
+                 recursive: Bool = true,
+                 completion: (() -> ())? = nil){
+        
+        guard let modelEnt = self.findEntity(where: {$0.components.has(ModelComponent.self)})
+        else {return} //No entities with model components were found, so none can be faded.
+        
         if recursive {
-            for child in self.children {
-                child.fadeOut(fadeDuration: fadeDuration,
-                              recursive: true)
-            }
+            self.visit(using: {
+                $0.components.remove(FadeComponent.self)
+            })
+        }
+
+        //Completion should only be called once, when the top-most ancestor that has a model component finishes fading.
+            modelEnt.components.set(FadeComponent(fadeType: .fadeOut,
+                                              fadeDuration: fadeDuration,
+                                              isRecursive: recursive,
+                                              completion: completion))
+
+        if recursive {
+            self.visit(using: {
+                //Only entities with model components can fade.
+                if $0.components.has(ModelComponent.self) &&
+                    $0.components.has(FadeComponent.self) == false {
+                    $0.components.set(FadeComponent(fadeType: .fadeOut,
+                                                    fadeDuration: fadeDuration,
+                                                    isRecursive: recursive,
+                                                    completion: nil))
+                }
+            })
         }
     }
 }

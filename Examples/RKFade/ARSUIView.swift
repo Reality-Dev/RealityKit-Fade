@@ -25,7 +25,10 @@ class ARSUIView: ARView {
             self?.addEntityToScene(goldStar)
 
             //Here is a simple way to fade in an entity:
-            //entity.fadeIn()
+            // entity.fadeIn()
+            
+            //Here is a simple way to fade out an entity:
+            // entity.fadeOut()
             
             //Here is a way to repeatedly fade an entity in and out:
             self?.fadeInAndOut(entity: goldStar)
@@ -37,17 +40,26 @@ class ARSUIView: ARView {
                       fadeIn: Bool = false){
         
 
-            if fadeIn {
-                entity.fadeIn(fadeDuration: fadeDuration)
-                
-            } else {
-                entity.fadeOut(fadeDuration: fadeDuration)
+        if fadeIn {
+            entity.fadeIn(fadeDuration: fadeDuration) {[weak entity, weak self] in
+                guard
+                    let entity = entity,
+                    let self = self
+                else {return}
+                self.fadeInAndOut(entity: entity,
+                             fadeDuration: fadeDuration,
+                             fadeIn: false)
             }
-        
-        Timer.scheduledTimer(withTimeInterval: fadeDuration, repeats: false){[weak self] timer in
-            guard entity.isEnabled else {timer.invalidate(); return}
-            
-            self?.fadeInAndOut(entity: entity, fadeIn: !fadeIn)
+        } else {
+            entity.fadeOut(fadeDuration: fadeDuration) {[weak entity, weak self] in
+                guard
+                    let entity = entity,
+                    let self = self
+                else {return}
+                self.fadeInAndOut(entity: entity,
+                             fadeDuration: fadeDuration,
+                             fadeIn: true)
+            }
         }
     }
     
