@@ -7,7 +7,6 @@
 import Foundation
 import RealityKit
 import UIKit
-import SwiftUI
 
 ///MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
 public struct FadeComponent: Component {
@@ -57,7 +56,6 @@ public struct FadeComponent: Component {
     }
 }
 
-
 public class FadeSystem: System {
     
     required public init(scene: RealityKit.Scene) {}
@@ -79,23 +77,16 @@ public class FadeSystem: System {
             entity.components[FadeComponent.self] = fadeComp
         
             entity.modifyMaterials {
-                if let customMat = $0 as? CustomMaterial  {
-                    return updateCustomMaterial(customMat,
-                                                entity: entity,
-                                                fadeComp: fadeComp)
-                } else if let pbrMat = $0 as? PhysicallyBasedMaterial {
-                    return updatePhysicallyBasedMaterial(pbrMat,
-                                                entity: entity,
-                                                fadeComp: fadeComp)
-                } else if let unlitMat = $0 as? UnlitMaterial {
-                        
-                    return updateUnlitMaterial(unlitMat,
-                                        entity: entity,
-                                        fadeComp: fadeComp)
+                if var mat = $0 as? HasBlending {
+                    updateMaterial(material: &mat,
+                                   entity: entity,
+                                   fadeComp: fadeComp)
+                                   return mat
+                    
                 } else if let simpleMat = $0 as? SimpleMaterial {
                     return updateSimpleMaterial(simpleMat,
-                                        entity: entity,
-                                        fadeComp: fadeComp)
+                                                entity: entity,
+                                                fadeComp: fadeComp)
                 } else {
                     return $0
                 }
@@ -132,6 +123,14 @@ public class FadeSystem: System {
         return opacity
     }
     
+    private func updateMaterial(material: inout HasBlending,
+                                entity: Entity,
+                                fadeComp: FadeComponent){
+        let newOpacity = self.updateOpacity(entity: entity,
+                                            fadeComp: fadeComp)
+        material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
+    }
+    
     private func updateSimpleMaterial(_ simpleMat: SimpleMaterial,
                                       entity: Entity,
                                       fadeComp: FadeComponent) -> SimpleMaterial {
@@ -152,104 +151,16 @@ public class FadeSystem: System {
         simpleMat.tintColor = Material.Color.white.withAlphaComponent(0.995)
         return simpleMat
     }
-    
-    
-    private func updateCustomMaterial(_ customMat: CustomMaterial,
-                                      entity: Entity,
-                                      fadeComp: FadeComponent) -> CustomMaterial {
-        
-        let completion = { (customMat: CustomMaterial) -> RealityKit.CustomMaterial in
-            var customMat = customMat
-            let newOpacity = self.updateOpacity(entity: entity,
-                                                fadeComp: fadeComp)
-            customMat.blending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
-            return customMat
-        }
-        
-        var customMat = customMat
-        switch customMat.blending {
-        case .opaque:
-            let opacity: Float = fadeComp.fadeType == .fadeIn ? 0.0 : 1.0
-            customMat.blending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: opacity))
-            return completion(customMat)
-        case .transparent(opacity: _):
-            return completion(customMat)
-        @unknown default:
-            break
-        }
-        return customMat
-    }
-    
-    private func updatePhysicallyBasedMaterial(_ pbrMat: PhysicallyBasedMaterial,
-                                      entity: Entity,
-                                      fadeComp: FadeComponent) -> PhysicallyBasedMaterial {
-        
-        let completion = { (customMat: PhysicallyBasedMaterial) -> RealityKit.PhysicallyBasedMaterial in
-            var pbrMat = pbrMat
-            let newOpacity = self.updateOpacity(entity: entity,
-                                                fadeComp: fadeComp)
-            pbrMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: newOpacity))
-            return pbrMat
-        }
-        
-        var pbrMat = pbrMat
-        switch pbrMat.blending {
-        case .opaque:
-            let opacity: Float = fadeComp.fadeType == .fadeIn ? 0.0 : 1.0
-            pbrMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: opacity))
-            return completion(pbrMat)
-        case .transparent(opacity: _):
-            return completion(pbrMat)
-        @unknown default:
-            break
-        }
-        return pbrMat
-    }
-    
-    
-    private func updateUnlitMaterial(_ unlitMat: UnlitMaterial,
-                                      entity: Entity,
-                                      fadeComp: FadeComponent) -> UnlitMaterial {
-        
-        let completion = { (unlitMat: UnlitMaterial) -> RealityKit.UnlitMaterial in
-            var unlitMat = unlitMat
-            let newOpacity = self.updateOpacity(entity: entity,
-                                                fadeComp: fadeComp)
-            unlitMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: newOpacity))
-            return unlitMat
-        }
-        
-        var unlitMat = unlitMat
-        switch unlitMat.blending {
-        case .opaque:
-            let opacity: Float = fadeComp.fadeType == .fadeIn ? 0.0 : 1.0
-            unlitMat.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: opacity))
-            return completion(unlitMat)
-        case .transparent(opacity: _):
-            return completion(unlitMat)
-        @unknown default:
-            break
-        }
-        return unlitMat
-    }
-}
-
-
-public extension UIColor {
-    var rgba: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-        getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-
-        return (red, green, blue, alpha)
-    }
 }
 
 
 public extension Entity {
     
+    
+    /// Fades the entity in over a specified duration.
+    /// - Parameters:
+    ///   - fadeDuration: How long it takes for the entity to fade in, in seconds.
+    ///   - recursive: If recursive the fade applies to all descendant entities as well. If not recursive it applies to only this entity and no descendants.
     func fadeIn(fadeDuration: TimeInterval = 5,
                 recursive: Bool = true){
         self.components.set(FadeComponent(fadeType: .fadeIn,
@@ -263,6 +174,10 @@ public extension Entity {
         }
     }
     
+    /// Fades the entity out over a specified duration.
+    /// - Parameters:
+    ///   - fadeDuration: How long it takes for the entity to fade out, in seconds.
+    ///   - recursive: If recursive the fade applies to all descendant entities as well. If not recursive it applies to only this entity and no descendants.
     func fadeOut(fadeDuration: TimeInterval = 5,
                  recursive: Bool = true){
         self.components.set(FadeComponent(fadeType: .fadeOut,

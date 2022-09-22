@@ -18,7 +18,6 @@ public extension Entity {
         }
     }
 
-
     func modifyMaterials(_ closure: (RealityKit.Material) throws -> RealityKit.Material) rethrows {
 
         guard var comp = components[ModelComponent.self] as? ModelComponent else { return }

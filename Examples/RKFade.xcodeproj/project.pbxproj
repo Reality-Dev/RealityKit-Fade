@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		55A0D37D27DACA780003B3D3 /* Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A0D37C27DACA780003B3D3 /* Utilities.swift */; };
+		55B8EF1C28DD0FA100C4272B /* HasBlending.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B8EF1B28DD0FA100C4272B /* HasBlending.swift */; };
 		55DF1787273C9E0A00BB73B8 /* gold_star.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 55DF1786273C9E0A00BB73B8 /* gold_star.usdz */; };
 		55ECE090273C82E000842DCC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55ECE088273C82E000842DCC /* Assets.xcassets */; };
 		55ECE091273C82E000842DCC /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55ECE08A273C82E000842DCC /* Preview Assets.xcassets */; };
@@ -21,6 +22,7 @@
 
 /* Begin PBXFileReference section */
 		55A0D37C27DACA780003B3D3 /* Utilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities.swift; sourceTree = "<group>"; };
+		55B8EF1B28DD0FA100C4272B /* HasBlending.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HasBlending.swift; sourceTree = "<group>"; };
 		55BFE66525D2200F00E2BB8C /* RKFade.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RKFade.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		55DF1786273C9E0A00BB73B8 /* gold_star.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = gold_star.usdz; sourceTree = "<group>"; };
 		55ECE088273C82E000842DCC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				55ECE099273C850C00842DCC /* RKFade.swift */,
+				55B8EF1B28DD0FA100C4272B /* HasBlending.swift */,
 				55A0D37C27DACA780003B3D3 /* Utilities.swift */,
 			);
 			name = RKFade;
@@ -175,6 +178,7 @@
 				55ECE09A273C850C00842DCC /* RKFade.swift in Sources */,
 				55ECE093273C82E000842DCC /* AppDelegate.swift in Sources */,
 				55ECE094273C82E000842DCC /* ContentView.swift in Sources */,
+				55B8EF1C28DD0FA100C4272B /* HasBlending.swift in Sources */,
 				55A0D37D27DACA780003B3D3 /* Utilities.swift in Sources */,
 				55ECE092273C82E000842DCC /* ARSUIView.swift in Sources */,
 			);
