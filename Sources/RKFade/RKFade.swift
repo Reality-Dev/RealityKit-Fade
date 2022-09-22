@@ -82,12 +82,14 @@ public class FadeSystem: System {
             guard var fadeComp = entity.components[FadeComponent.self] as? FadeComponent else {return}
             
             fadeComp.completedDuration += deltaTime
+            
+            entity.components.set(fadeComp)
         
             entity.modifyMaterials {
                 if var mat = $0 as? HasBlending {
                     updateMaterial(material: &mat,
                                    entity: entity,
-                                   fadeComp: &fadeComp)
+                                   fadeComp: fadeComp)
                                    return mat
                     
                 } else if let simpleMat = $0 as? SimpleMaterial {
@@ -98,7 +100,6 @@ public class FadeSystem: System {
                     return $0
                 }
             }
-            entity.components[FadeComponent.self] = fadeComp
         }
     }
     
@@ -134,7 +135,7 @@ public class FadeSystem: System {
     
     private func updateMaterial(material: inout HasBlending,
                                 entity: Entity,
-                                fadeComp: inout FadeComponent){
+                                fadeComp: FadeComponent){
         let newOpacity = self.updateOpacity(entity: entity,
                                             fadeComp: fadeComp)
         switch material.opacityBlending {
@@ -146,7 +147,9 @@ public class FadeSystem: System {
             if let blendingTexture = fadeComp.blendingTexture {
                 material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: blendingTexture))
             } else if let blendingTexture = opacity.texture {
+                var fadeComp = fadeComp
                 fadeComp.blendingTexture = blendingTexture
+                entity.components.set(fadeComp)
                 material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: opacity.texture))
             } else {
                 material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
