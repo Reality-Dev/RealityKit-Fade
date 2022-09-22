@@ -134,7 +134,16 @@ public class FadeSystem: System {
                                 fadeComp: FadeComponent){
         let newOpacity = self.updateOpacity(entity: entity,
                                             fadeComp: fadeComp)
-        material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
+        switch material.opacityBlending {
+            
+        case .opaque:
+            material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
+        case .transparent(opacity: let opacity):
+            //Preserve any opacity textures.
+            material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: opacity.texture))
+        @unknown default:
+            break
+        }
     }
     
     private func updateSimpleMaterial(_ simpleMat: SimpleMaterial,
