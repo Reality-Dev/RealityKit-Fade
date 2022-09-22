@@ -21,6 +21,10 @@ public struct FadeComponent: Component {
     var fadeType: FadeType
     var fadeDuration: TimeInterval = 5
     
+    //Components are structs so we must make a copy to modify them.
+    //In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
+    //Therefore we must keep a separate reference to the texture here.
+    fileprivate var blendingTexture: CustomMaterial.Texture?
     
     public enum FadeType {
         case fadeIn, fadeOut
@@ -78,14 +82,12 @@ public class FadeSystem: System {
             guard var fadeComp = entity.components[FadeComponent.self] as? FadeComponent else {return}
             
             fadeComp.completedDuration += deltaTime
-            
-            entity.components[FadeComponent.self] = fadeComp
         
             entity.modifyMaterials {
                 if var mat = $0 as? HasBlending {
                     updateMaterial(material: &mat,
                                    entity: entity,
-                                   fadeComp: fadeComp)
+                                   fadeComp: &fadeComp)
                                    return mat
                     
                 } else if let simpleMat = $0 as? SimpleMaterial {
@@ -96,6 +98,7 @@ public class FadeSystem: System {
                     return $0
                 }
             }
+            entity.components[FadeComponent.self] = fadeComp
         }
     }
     
@@ -131,7 +134,7 @@ public class FadeSystem: System {
     
     private func updateMaterial(material: inout HasBlending,
                                 entity: Entity,
-                                fadeComp: FadeComponent){
+                                fadeComp: inout FadeComponent){
         let newOpacity = self.updateOpacity(entity: entity,
                                             fadeComp: fadeComp)
         switch material.opacityBlending {
@@ -140,7 +143,14 @@ public class FadeSystem: System {
             material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
         case .transparent(opacity: let opacity):
             //Preserve any opacity textures.
-            material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: opacity.texture))
+            if let blendingTexture = fadeComp.blendingTexture {
+                material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: blendingTexture))
+            } else if let blendingTexture = opacity.texture {
+                fadeComp.blendingTexture = blendingTexture
+                material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: opacity.texture))
+            } else {
+                material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
+            }
         @unknown default:
             break
         }
