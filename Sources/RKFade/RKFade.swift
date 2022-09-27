@@ -18,8 +18,8 @@ public struct FadeComponent: Component {
     
     fileprivate var completion: (() -> ())?
     
-    var fadeType: FadeType
-    var fadeDuration: TimeInterval = 5
+    public private(set) var fadeType: FadeType
+    public private(set) var fadeDuration: TimeInterval = 5
     
     //Components are structs so we must make a copy to modify them.
     //In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
