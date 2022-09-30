@@ -84,28 +84,34 @@ public class FadeSystem: System {
             fadeComp.completedDuration += deltaTime
             
             entity.components.set(fadeComp)
+            
+            var didFinishFade = false
         
             entity.modifyMaterials {
                 if var mat = $0 as? HasBlending {
-                    updateMaterial(material: &mat,
+                    didFinishFade = updateMaterial(material: &mat,
                                    entity: entity,
                                    fadeComp: fadeComp)
                                    return mat
                     
-                } else if let simpleMat = $0 as? SimpleMaterial {
-                    return updateSimpleMaterial(simpleMat,
+                } else if var simpleMat = $0 as? SimpleMaterial {
+                    didFinishFade = updateSimpleMaterial(&simpleMat,
                                                 entity: entity,
                                                 fadeComp: fadeComp)
+                    return simpleMat
                 } else {
                     return $0
                 }
             }
+            //Call completion AFTER setting the material in case the completion affects the material.
+            if didFinishFade {fadeComp.completion?()}
         }
     }
     
     private func updateOpacity(entity: Entity,
-                               fadeComp: FadeComponent) -> Float {
+                               fadeComp: FadeComponent) -> (Float, Bool) {
         var opacity: Float
+        var didFinishFade = false
 
         let percentCompleted = Float(fadeComp.completedDuration  / fadeComp.fadeDuration)
         
@@ -128,16 +134,19 @@ public class FadeSystem: System {
             } else {
                 entity.components.remove(FadeComponent.self)
             }
-            fadeComp.completion?()
+            didFinishFade = true
         }
-        return opacity
+        return (opacity, didFinishFade)
     }
     
     private func updateMaterial(material: inout HasBlending,
                                 entity: Entity,
-                                fadeComp: FadeComponent){
-        let newOpacity = self.updateOpacity(entity: entity,
+                                fadeComp: FadeComponent) -> Bool {
+        let newValues = self.updateOpacity(entity: entity,
                                             fadeComp: fadeComp)
+        let newOpacity = newValues.0
+        let didFinishFade = newValues.1
+        
         switch material.opacityBlending {
             
         case .opaque:
@@ -157,13 +166,12 @@ public class FadeSystem: System {
         @unknown default:
             break
         }
+        return didFinishFade
     }
     
-    private func updateSimpleMaterial(_ simpleMat: SimpleMaterial,
+    private func updateSimpleMaterial(_ simpleMat: inout SimpleMaterial,
                                       entity: Entity,
-                                      fadeComp: FadeComponent) -> SimpleMaterial {
-        
-        var simpleMat = simpleMat
+                                      fadeComp: FadeComponent) -> Bool {
         var baseColor = UIColor.white
         switch simpleMat.baseColor {
         case .color(let color):
@@ -173,11 +181,14 @@ public class FadeSystem: System {
         @unknown default:
             break
         }
-        let newOpacity = self.updateOpacity(entity: entity,
-                                                fadeComp: fadeComp)
+        let newValues = self.updateOpacity(entity: entity,
+                                            fadeComp: fadeComp)
+        let newOpacity = newValues.0
+        let didFinishFade = newValues.1
         simpleMat.baseColor = .color(baseColor.withAlphaComponent(CGFloat(newOpacity)))
         simpleMat.tintColor = Material.Color.white.withAlphaComponent(0.995)
-        return simpleMat
+        
+        return didFinishFade
     }
 }
 
