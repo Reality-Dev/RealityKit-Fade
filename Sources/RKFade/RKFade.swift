@@ -21,6 +21,8 @@ public struct FadeComponent: Component {
     public private(set) var fadeType: FadeType
     public private(set) var fadeDuration: TimeInterval = 5
     
+    fileprivate var initialOpacity: Float?
+    
     //Components are structs so we must make a copy to modify them.
     //In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
     //Therefore we must keep a separate reference to the texture here.
@@ -31,13 +33,13 @@ public struct FadeComponent: Component {
     }
     
     fileprivate init(fadeType: FadeType,
-                fadeDuration: TimeInterval = 5,
+                duration: TimeInterval = 5,
                 isRecursive: Bool,
                 opacityTexture: CustomMaterial.Texture?,
                 completion: (() -> ())?){
         
         self.fadeType = fadeType
-        self.fadeDuration = fadeDuration
+        self.fadeDuration = duration
         
         self.isRecursive = isRecursive
         
@@ -53,10 +55,10 @@ public struct FadeComponent: Component {
     }
     
     public init(fadeType: FadeType,
-                fadeDuration: TimeInterval = 5){
+                duration: TimeInterval = 5){
         
         self.fadeType = fadeType
-        self.fadeDuration = fadeDuration
+        self.fadeDuration = duration
         
         self.isRecursive = false
         
@@ -86,15 +88,16 @@ public class FadeSystem: System {
             
             fadeComp.completedDuration += deltaTime
             
-            entity.components.set(fadeComp)
-            
             var didFinishFade = false
         
             entity.modifyMaterials {
                 if var mat = $0 as? HasBlending {
+                    setInitialOpacity(mat: mat, fadeComp: &fadeComp)
+                        
                     didFinishFade = updateMaterial(material: &mat,
                                    entity: entity,
                                    fadeComp: fadeComp)
+                    
                                    return mat
                     
                 } else if var simpleMat = $0 as? SimpleMaterial {
@@ -106,8 +109,23 @@ public class FadeSystem: System {
                     return $0
                 }
             }
+            
+            entity.components.set(fadeComp)
             //Call completion AFTER setting the material in case the completion affects the material.
             if didFinishFade {fadeComp.completion?()}
+        }
+    }
+    
+    private func setInitialOpacity(mat: HasBlending, fadeComp: inout FadeComponent){
+        guard fadeComp.initialOpacity == nil else {return}
+        
+        switch fadeComp.fadeType {
+        case .fadeIn:
+            //Start the fade in from something less than 1.
+            fadeComp.initialOpacity = mat.opacityScale == 1 ? 0 : mat.opacityScale
+        case .fadeOut:
+            //Start the fade out from something greater than 0.
+            fadeComp.initialOpacity = mat.opacityScale == 0 ? 1 : mat.opacityScale
         }
     }
     
@@ -116,16 +134,22 @@ public class FadeSystem: System {
         var opacity: Float
         var didFinishFade = false
 
-        let percentCompleted = Float(fadeComp.completedDuration  / fadeComp.fadeDuration)
-        
+        let percentCompleted = Float(fadeComp.completedDuration  / fadeComp.fadeDuration).clamped(0, 1)
         
         if (fadeComp.fadeType == .fadeIn && percentCompleted < 1)
         {
-            opacity =  min(1, percentCompleted)
+            
+            let initialOpacity: Float = fadeComp.initialOpacity ?? 0
+            
+            let interpolatedChange = (1 - initialOpacity) * percentCompleted
+            opacity = initialOpacity + interpolatedChange
             
         } else if (fadeComp.fadeType == .fadeOut && percentCompleted < 1) {
             
-            opacity = max(0, 1 - percentCompleted)
+            let initialOpacity: Float = fadeComp.initialOpacity ?? 1
+            
+            let interpolatedChange = initialOpacity * percentCompleted
+            opacity = initialOpacity - interpolatedChange
             
         } else {
             //The fade has completed
@@ -207,7 +231,7 @@ public extension Entity {
     ///   - recursive: If recursive the fade applies to all descendant entities as well. If not recursive it applies to only this entity and no descendants.
     ///   - opacityTexture: An optional CustomMaterial texture. On iOS 16 textures get lost when updating materials so passing it here makes sure it gets retained.
     ///   - completion: A closure that gets called when the fade has finished.
-    func fadeIn(fadeDuration: TimeInterval = 5,
+    func fadeIn(duration: TimeInterval = 5,
                 recursive: Bool = true,
                 opacityTexture: CustomMaterial.Texture? = nil,
                 completion: (() -> ())? = nil){
@@ -223,7 +247,7 @@ public extension Entity {
 
         //Completion should only be called once, when the top-most ancestor that has a model component finishes fading.
             modelEnt.components.set(FadeComponent(fadeType: .fadeIn,
-                                              fadeDuration: fadeDuration,
+                                              duration: duration,
                                               isRecursive: recursive,
                                                   opacityTexture: opacityTexture,
                                               completion: completion))
@@ -232,9 +256,9 @@ public extension Entity {
             self.visit(using: {
                 //Only entities with model components can fade.
                 if $0.components.has(ModelComponent.self) &&
-                    $0.components.has(FadeComponent.self) == false {
+                    $0 != modelEnt {
                     $0.components.set(FadeComponent(fadeType: .fadeIn,
-                                                    fadeDuration: fadeDuration,
+                                                    duration: duration,
                                                     isRecursive: recursive,
                                                     opacityTexture: nil,
                                                     completion: nil))
@@ -249,7 +273,7 @@ public extension Entity {
     ///   - recursive: If recursive the fade applies to all descendant entities as well. If not recursive it applies to only this entity and no descendants.
     ///   - opacityTexture: An optional CustomMaterial texture. On iOS 16 textures get lost when updating materials so passing it here makes sure it gets retained.
     ///   - completion: A closure that gets called when the fade has finished.
-    func fadeOut(fadeDuration: TimeInterval = 5,
+    func fadeOut(duration: TimeInterval = 5,
                  recursive: Bool = true,
                  opacityTexture: CustomMaterial.Texture? = nil,
                  completion: (() -> ())? = nil){
@@ -265,7 +289,7 @@ public extension Entity {
 
         //Completion should only be called once, when the top-most ancestor that has a model component finishes fading.
             modelEnt.components.set(FadeComponent(fadeType: .fadeOut,
-                                              fadeDuration: fadeDuration,
+                                                duration: duration,
                                               isRecursive: recursive,
                                                   opacityTexture: opacityTexture,
                                               completion: completion))
@@ -274,9 +298,9 @@ public extension Entity {
             self.visit(using: {
                 //Only entities with model components can fade.
                 if $0.components.has(ModelComponent.self) &&
-                    $0.components.has(FadeComponent.self) == false {
+                    $0 != modelEnt {
                     $0.components.set(FadeComponent(fadeType: .fadeOut,
-                                                    fadeDuration: fadeDuration,
+                                                    duration: duration,
                                                     isRecursive: recursive,
                                                     opacityTexture: nil,
                                                     completion: nil))

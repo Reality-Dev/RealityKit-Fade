@@ -34,3 +34,17 @@ public extension Entity {
         return nil
     }
 }
+
+// MARK: - Comparable extensions
+extension Comparable {
+    
+    /// Returns self clamped between two values.
+    /// - If self is already between the two input values, returns self. If self is below a, returns a. If self is above b, returns b.
+    /// - Parameters:
+    ///   - a: The lower bound
+    ///   - b: The upper bound.
+    /// - Returns: self clamped between the two input values.
+    func clamped(_ a: Self, _ b: Self) -> Self {
+        min(max(self, a), b)
+    }
+}
