@@ -6,7 +6,7 @@
 
 import ARKit
 import RealityKit
-//import RKFade
+import RKFade
 import RKAssetLoading
 
 class ARSUIView: ARView {

@@ -11,9 +11,12 @@ let package = Package(
   products: [
     .library(name: "RKFade", targets: ["RKFade"])
   ],
-  dependencies: [],
+  dependencies: [
+    .package(name: "RKUtilities", url: "https://github.com/Reality-Dev/RealityKit-Utilities", from: "1.0.0")
+  ],
   targets: [
-    .target(name: "RKFade", dependencies: [])
+    .target(name: "RKFade",
+            dependencies:[.product(name: "RKUtilities", package: "RKUtilities")])
   ],
   swiftLanguageVersions: [.v5]
 )

@@ -7,6 +7,7 @@
 import Foundation
 import RealityKit
 import UIKit
+import RKUtilities
 
 ///MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
 public struct FadeComponent: Component {
