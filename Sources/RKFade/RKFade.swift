@@ -6,7 +6,6 @@
 
 import Foundation
 import RealityKit
-import UIKit
 import RKUtilities
 
 ///MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
@@ -20,6 +19,7 @@ public struct FadeComponent: Component {
     fileprivate var completion: (() -> ())?
     
     public private(set) var fadeType: FadeType
+    
     public private(set) var fadeDuration: TimeInterval = 5
     
     fileprivate var initialOpacity: Float?
@@ -40,6 +40,7 @@ public struct FadeComponent: Component {
                 completion: (() -> ())?){
         
         self.fadeType = fadeType
+        
         self.fadeDuration = duration
         
         self.isRecursive = isRecursive
@@ -59,6 +60,7 @@ public struct FadeComponent: Component {
                 duration: TimeInterval = 5){
         
         self.fadeType = fadeType
+        
         self.fadeDuration = duration
         
         self.isRecursive = false
@@ -91,7 +93,7 @@ public class FadeSystem: System {
             
             var didFinishFade = false
         
-            entity.modifyMaterials {
+            entity.modifyMaterialsNonRecursive {
                 if var mat = $0 as? HasBlending {
                     setInitialOpacity(mat: mat, fadeComp: &fadeComp)
                         
@@ -111,9 +113,12 @@ public class FadeSystem: System {
                 }
             }
             
-            entity.components.set(fadeComp)
             //Call completion AFTER setting the material in case the completion affects the material.
-            if didFinishFade {fadeComp.completion?()}
+            if didFinishFade {
+                fadeComp.completion?()
+            } else {
+                entity.components.set(fadeComp)
+            }
         }
     }
     
@@ -202,7 +207,7 @@ public class FadeSystem: System {
     private func updateSimpleMaterial(_ simpleMat: inout SimpleMaterial,
                                       entity: Entity,
                                       fadeComp: FadeComponent) -> Bool {
-        var baseColor = UIColor.white
+        var baseColor = SimpleMaterial.Color.white
         switch simpleMat.baseColor {
         case .color(let color):
             baseColor = color
@@ -225,6 +230,12 @@ public class FadeSystem: System {
 
 public extension Entity {
     
+    fileprivate func modifyMaterialsNonRecursive(_ closure: (RealityKit.Material) throws -> RealityKit.Material) rethrows {
+        
+        guard var comp = components[ModelComponent.self] as? ModelComponent else { return }
+        comp.materials = try comp.materials.map { try closure($0) }
+        components[ModelComponent.self] = comp
+    }
     
     /// Fades the entity in over a specified duration.
     /// - Parameters:
