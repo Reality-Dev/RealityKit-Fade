@@ -34,7 +34,7 @@ class ARSUIView: ARView {
     }
 
     func fadeInAndOut(entity: Entity,
-                      fadeDuration: TimeInterval = 4,
+                      fadeDuration: TimeInterval = 1,
                       fadeIn: Bool = false)
     {
         if fadeIn {

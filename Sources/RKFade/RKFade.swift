@@ -23,6 +23,7 @@ public struct FadeComponent: Component {
     public private(set) var fadeDuration: TimeInterval = 5
 
     fileprivate var initialOpacity: Float?
+    fileprivate var targetOpacity: Float
 
     // Components are structs so we must make a copy to modify them.
     // In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
@@ -35,20 +36,27 @@ public struct FadeComponent: Component {
 
     fileprivate init(fadeType: FadeType,
                      duration: TimeInterval = 5,
+                     targetOpacity: Float?,
                      isRecursive: Bool,
                      opacityTexture: CustomMaterial.Texture?,
                      completion: (() -> Void)?)
     {
         self.fadeType = fadeType
 
-        fadeDuration = duration
+        self.fadeDuration = duration
+        
+        self.targetOpacity = targetOpacity ?? (fadeType == .fadeIn ? 1.0 : 0.0)
 
         self.isRecursive = isRecursive
 
-        blendingTexture = opacityTexture
+        self.blendingTexture = opacityTexture
 
         self.completion = completion
 
+        self.register()
+    }
+    
+    private func register(){
         if Self.isRegistered == false {
             Self.isRegistered = true
             FadeSystem.registerSystem()
@@ -61,15 +69,13 @@ public struct FadeComponent: Component {
     {
         self.fadeType = fadeType
 
-        fadeDuration = duration
+        self.fadeDuration = duration
+        
+        self.targetOpacity = fadeType == .fadeIn ? 1.0 : 0.0
 
-        isRecursive = false
+        self.isRecursive = false
 
-        if Self.isRegistered == false {
-            Self.isRegistered = true
-            FadeSystem.registerSystem()
-            FadeComponent.registerComponent()
-        }
+        self.register()
     }
 }
 
@@ -92,11 +98,12 @@ public class FadeSystem: System {
             let updates = updateOpacity(entity: entity, fadeComp: fadeComp)
             let didFinishFade = updates.didFinish
             let newOpacity = updates.newOpacity
+            var properDirection = true
             
             let materialUpdate: (RealityKit.Material) throws -> RealityKit.Material = { [weak self] in
 
                     if var mat = $0 as? HasBlending {
-                        self?.setInitialOpacity(mat: mat, fadeComp: &fadeComp)
+                        if !(self?.setInitialOpacity(mat: mat, fadeComp: &fadeComp) ?? true) { properDirection = false }
 
                         self?.updateMaterial(material: &mat,
                                        newOpacity: newOpacity,
@@ -129,23 +136,35 @@ public class FadeSystem: System {
             if didFinishFade {
                 entity.components.remove(FadeComponent.self)
                 fadeComp.completion?()
+                
+            } else if properDirection == false {
+                 print("For fade out, initial opacity must be greater than target opacity")
+                print("For fade in, initial opacity must be less than target opacity")
+                entity.components.remove(FadeComponent.self)
+                fadeComp.completion?()
+                
             } else {
                 entity.components.set(fadeComp)
             }
         }
     }
 
-    private func setInitialOpacity(mat: HasBlending, fadeComp: inout FadeComponent) {
-        guard fadeComp.initialOpacity == nil else { return }
+    private func setInitialOpacity(mat: HasBlending, fadeComp: inout FadeComponent) -> Bool {
+        guard fadeComp.initialOpacity == nil else { return true}
 
         switch fadeComp.fadeType {
         case .fadeIn:
             // Start the fade in from something less than 1.
-            fadeComp.initialOpacity = mat.opacityScale == 1 ? 0 : mat.opacityScale
+            let initialOpacity = mat.opacityScale == 1 ? 0 : mat.opacityScale
+            fadeComp.initialOpacity = initialOpacity
+            guard initialOpacity < fadeComp.targetOpacity else {return false}
         case .fadeOut:
             // Start the fade out from something greater than 0.
-            fadeComp.initialOpacity = mat.opacityScale == 0 ? 1 : mat.opacityScale
+            let initialOpacity = mat.opacityScale == 0 ? 1 : mat.opacityScale
+            fadeComp.initialOpacity = initialOpacity
+            guard initialOpacity > fadeComp.targetOpacity else {return false}
         }
+        return true
     }
 
     private func updateOpacity(entity: Entity,
@@ -159,18 +178,18 @@ public class FadeSystem: System {
         if fadeComp.fadeType == .fadeIn && percentCompleted < 1 {
             let initialOpacity: Float = fadeComp.initialOpacity ?? 0
 
-            let interpolatedChange = (1 - initialOpacity) * percentCompleted
+            let interpolatedChange = (fadeComp.targetOpacity - initialOpacity) * percentCompleted
             opacity = initialOpacity + interpolatedChange
 
         } else if fadeComp.fadeType == .fadeOut && percentCompleted < 1 {
             let initialOpacity: Float = fadeComp.initialOpacity ?? 1
 
-            let interpolatedChange = initialOpacity * percentCompleted
+            let interpolatedChange = (initialOpacity - fadeComp.targetOpacity) * percentCompleted
             opacity = initialOpacity - interpolatedChange
 
         } else {
             // The fade has completed
-            opacity = fadeComp.fadeType == .fadeIn ? 1.0 : 0.0
+            opacity = fadeComp.targetOpacity
 
             didFinishFade = true
         }
@@ -240,12 +259,14 @@ public extension Entity {
     ///   - opacityTexture: An optional CustomMaterial texture. On iOS 16 textures get lost when updating materials so passing it here makes sure it gets retained.
     ///   - completion: A closure that gets called when the fade has finished.
     func fadeIn(duration: TimeInterval = 5,
+                targetOpacity: Float? = nil,
                 recursive: Bool = true,
                 opacityTexture: CustomMaterial.Texture? = nil,
                 completion: (() -> Void)? = nil)
     {
         fade(fadeType: .fadeIn,
              duration: duration,
+             targetOpacity: targetOpacity,
              recursive: recursive,
              opacityTexture: opacityTexture,
              completion: completion)
@@ -258,12 +279,14 @@ public extension Entity {
     ///   - opacityTexture: An optional CustomMaterial texture. On iOS 16 textures get lost when updating materials so passing it here makes sure it gets retained.
     ///   - completion: A closure that gets called when the fade has finished.
     func fadeOut(duration: TimeInterval = 5,
+                 targetOpacity: Float? = nil,
                  recursive: Bool = true,
                  opacityTexture: CustomMaterial.Texture? = nil,
                  completion: (() -> Void)? = nil)
     {
         fade(fadeType: .fadeOut,
              duration: duration,
+             targetOpacity: targetOpacity,
              recursive: recursive,
              opacityTexture: opacityTexture,
              completion: completion)
@@ -271,6 +294,7 @@ public extension Entity {
     
     private func fade(fadeType: FadeComponent.FadeType,
                       duration: TimeInterval,
+                      targetOpacity: Float?,
                       recursive: Bool,
                       opacityTexture: CustomMaterial.Texture?,
                       completion: (() -> Void)?){
@@ -287,7 +311,8 @@ public extension Entity {
 
         // Completion should only be called once, when the top-most ancestor that has a model component finishes fading.
         components.set(FadeComponent(fadeType: fadeType,
-                                              duration: duration,
+                                     duration: duration,
+                                     targetOpacity: targetOpacity,
                                               isRecursive: recursive,
                                               opacityTexture: opacityTexture,
                                               completion: completion))
