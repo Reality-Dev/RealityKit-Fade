@@ -121,10 +121,6 @@ public class FadeSystem: System {
             // Call completion AFTER setting the material in case the completion affects the material.
             if didFinishFade {
                 entity.components.remove(FadeComponent.self)
-                entity.visit {
-                    $0.components.remove(CustomTexturesComponent.self)
-                    $0.components.remove(PBRTexturesComponent.self)
-                }
                 fadeComp.completion?()
                 
             } else {
@@ -210,13 +206,16 @@ public class FadeSystem: System {
         let modelEnts = entity.findAllHasModelComponent()
 
         for modelEnt in modelEnts {
-            guard let model = modelEnt.modelComponent else { continue }
+            guard
+                modelEnt.components.has(CustomTexturesComponent.self) == false,
+                modelEnt.components.has(PBRTexturesComponent.self) == false,
+                let _ = modelEnt.modelComponent else { continue }
             
             var customMaterialTextures = [[MaterialTexture: CustomMaterial.Texture]]()
 
             var pbrMaterialTextures = [[MaterialTexture: PhysicallyBasedMaterial.Texture]]()
             
-            for material in model.materials {
+            for material in modelEnt.modelComponent!.materials {
                 if let customMat = material as? CustomMaterial {
                     customMaterialTextures.append(customMat.getTextures())
                 } else if let pbrMat = material as? HasPhysicallyBasedTextures {

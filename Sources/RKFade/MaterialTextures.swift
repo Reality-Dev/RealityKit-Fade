@@ -21,24 +21,28 @@ extension Registerable {
     }
 }
 
-internal struct CustomTexturesComponent: Registerable {
+public struct CustomTexturesComponent: Registerable {
     internal static var isRegistered = false
+    
     var customMaterialTextures: [[MaterialTexture: CustomMaterial.Texture]]
-    init(customMaterialTextures: [[MaterialTexture : CustomMaterial.Texture]]) {
+    
+    public init(customMaterialTextures: [[MaterialTexture : CustomMaterial.Texture]]) {
         self.customMaterialTextures = customMaterialTextures
         register()
     }
 }
-internal struct PBRTexturesComponent: Registerable {
+public struct PBRTexturesComponent: Registerable {
     internal static var isRegistered = false
+    
     var pbrMaterialTextures: [[MaterialTexture: PhysicallyBasedMaterial.Texture]]
-    init(pbrMaterialTextures: [[MaterialTexture : PhysicallyBasedMaterial.Texture]]) {
+    
+    public init(pbrMaterialTextures: [[MaterialTexture : PhysicallyBasedMaterial.Texture]]) {
         self.pbrMaterialTextures = pbrMaterialTextures
         register()
     }
 }
 
-internal enum MaterialTexture: CaseIterable {
+public enum MaterialTexture: CaseIterable {
 
         case ambientOcclusion
         case anisotropyLevel
