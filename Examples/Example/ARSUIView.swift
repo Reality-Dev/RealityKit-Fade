@@ -17,19 +17,30 @@ class ARSUIView: ARView {
 //        let box = ModelEntity.makeBox()
 //        addEntityToScene(box)
 //        box.fadeIn()
+    
+        runNewConfig()
 
-        RKAssetLoader.loadEntityAsync(named: "gold_star") { [weak self] goldStar in
+        // These particular modeles help with testing to make sure that models with multiple materials and textures work,
+        // as well as recursive fading applied to descendants.
+        RKAssetLoader.loadModelEntitiesAsync(entityNames: "rocket", "cupcake"){ [weak self] loadedEntities in
 
-            self?.addEntityToScene(goldStar)
+            let rocket = loadedEntities[0]
+            let cupcake = loadedEntities[1]
+            
+            rocket.addChild(cupcake)
+            
+            self?.addEntityToScene(rocket)
 
             // Here is a simple way to fade in an entity:
-            // goldStar.fadeIn()
+            // rocket.fadeIn()
 
             // Here is a simple way to fade out an entity:
-            // goldStar.fadeOut()
+            // rocket.fadeOut()
 
             // Here is a way to repeatedly fade an entity in and out:
-            self?.fadeInAndOut(entity: goldStar)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5){
+                self?.fadeInAndOut(entity: rocket)
+            }
         }
     }
 
@@ -59,14 +70,20 @@ class ARSUIView: ARView {
             }
         }
     }
+    
+    func runNewConfig(){
+        let worldTrackingConfig = ARWorldTrackingConfiguration()
+        worldTrackingConfig.planeDetection = .horizontal
+        self.session.run(worldTrackingConfig)
+    }
 
     func addEntityToScene(_ entity: Entity) {
-        let anchorEnt = AnchorEntity() // defaults to 0,0,0 in world space.
+        let anchorEnt = AnchorEntity(.plane(.any, classification: .any, minimumBounds: .zero)) // defaults to 0,0,0 in world space.
 
         scene.addAnchor(anchorEnt)
 
         anchorEnt.addChild(entity)
-        entity.scale = .init(repeating: 3)
-        entity.position = [0, 0, -4]
+        
+        entity.scale = .init(repeating: 2)
     }
 }

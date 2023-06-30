@@ -3,8 +3,6 @@
 
 import PackageDescription
 
-import PackageDescription
-
 let package = Package(
     name: "RKFade",
     platforms: [.iOS("15.0"), .macOS("12.0")],

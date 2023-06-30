@@ -10,7 +10,7 @@ import RKUtilities
 
 /// MUST be set on an Entity with at least one PhysicallyBasedMaterial, UnlitMaterial or CustomMaterial.
 public struct FadeComponent: Component {
-    static var isRegistered = false
+    fileprivate static var isRegistered = false
 
     fileprivate var completedDuration: TimeInterval = 0
 
@@ -30,11 +30,6 @@ public struct FadeComponent: Component {
     
     fileprivate var targetOpacity: Float
 
-    // Components are structs so we must make a copy to modify them.
-    // In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
-    // Therefore we must keep a separate reference to the texture here.
-    fileprivate var blendingTexture: CustomMaterial.Texture?
-
     public enum FadeType {
         case fadeIn, fadeOut
     }
@@ -44,7 +39,6 @@ public struct FadeComponent: Component {
                      initialOpacity: Float?,
                      targetOpacity: Float?,
                      isRecursive: Bool,
-                     opacityTexture: CustomMaterial.Texture?,
                      completion: (() -> Void)?)
     {
         self.fadeType = fadeType
@@ -56,8 +50,6 @@ public struct FadeComponent: Component {
         self.targetOpacity = targetOpacity ?? (fadeType == .fadeIn ? 1.0 : 0.0)
 
         self.isRecursive = isRecursive
-
-        self.blendingTexture = opacityTexture
 
         self.completion = completion
 
@@ -106,54 +98,87 @@ public class FadeSystem: System {
             if fadeComp.didCheckDirection == false,
                let modelEnt = entity.findFirstHasModelComponent(),
                let modelComp = modelEnt.modelComponent,
-               let firstMat = modelComp.materials.first(where: {$0 is HasBlending}) as? HasBlending,
+               let firstMat = modelComp.materials.first(where: {$0 is HasBlending}) as? HasBlending {
                //Must call `setInitialOpacity` before `updateOpacity` in order to avoid a blink.
-               !setInitialOpacity(mat: firstMat, fadeComp: &fadeComp, fadeEnt: entity) {
-                return
+                if !setInitialOpacity(mat: firstMat, fadeComp: &fadeComp, fadeEnt: entity) {
+                    return
+                } else {
+                    gatherTextures(on: entity)
+                }
             }
             let updates = updateOpacity(entity: entity, fadeComp: fadeComp)
             let didFinishFade = updates.didFinish
             let newOpacity = updates.newOpacity
             
-            let materialUpdate: (RealityKit.Material) throws -> RealityKit.Material = { [weak self] in
-
-                    if var mat = $0 as? HasBlending {
-
-                        self?.updateMaterial(material: &mat,
-                                       newOpacity: newOpacity,
-                                                       fadeComp: &fadeComp)
-
-                        return mat
-
-                    } else if var simpleMat = $0 as? SimpleMaterial {
-                        self?.updateSimpleMaterial(&simpleMat,
-                                             newOpacity: newOpacity,
-                                             fadeComp: fadeComp)
-                        return simpleMat
-                    } else {
-                        return $0
-                    }
-            }
-            
-            do {
-                if fadeComp.isRecursive {
-                    try entity.modifyMaterials(materialUpdate)
-                } else {
-                    try entity.modifyMaterialsNonRecursive(materialUpdate)
+            if fadeComp.isRecursive {
+                entity.visit {
+                    updateOpacity(on: $0, newOpacity: newOpacity)
                 }
-            } catch {
-                print("Error modifying opacity \(error)")
+            } else {
+                updateOpacity(on: entity, newOpacity: newOpacity)
             }
-
+   
             // Call completion AFTER setting the material in case the completion affects the material.
             if didFinishFade {
                 entity.components.remove(FadeComponent.self)
+                entity.visit {
+                    $0.components.remove(CustomTexturesComponent.self)
+                    $0.components.remove(PBRTexturesComponent.self)
+                }
                 fadeComp.completion?()
                 
             } else {
                 entity.components.set(fadeComp)
             }
         }
+    }
+    
+    private func updateOpacity(on entity: Entity,
+                               newOpacity: Float){
+        guard var model = entity.modelComponent else {return}
+        
+        //Using different kinds of materials across the same Entity is not currently supported.
+        //You may, however, apply different kinds of materials to descendant entities.
+        
+        var pbrTextures: [[MaterialTexture : PhysicallyBasedMaterial.Texture]]?
+        var customMaterialTextures: [[MaterialTexture: CustomMaterial.Texture]]?
+        
+        if let pbrTexturesComponent = entity.component(forType: PBRTexturesComponent.self){
+            pbrTextures = pbrTexturesComponent.pbrMaterialTextures
+            
+        } else if let customTexturesComponent = entity.component(forType: CustomTexturesComponent.self){
+            customMaterialTextures = customTexturesComponent.customMaterialTextures
+        }
+            
+            var materials = model.materials
+            
+            for (index, material) in materials.enumerated() {
+                if var hasBlending = material as? HasBlending {
+                    
+                    hasBlending.opacityScale = newOpacity
+                    
+                    if let pbrTextures,
+                       var pbrMat = hasBlending as? HasPhysicallyBasedTextures {
+                        pbrMat.applyTextures(pbrTextures[index])
+                        
+                        materials[index] = pbrMat
+                    } else if let customMaterialTextures,
+                              var customMat = hasBlending as? CustomMaterial {
+                        customMat.applyTextures(customMaterialTextures[index])
+                        
+                        materials[index] = customMat
+                    } else {
+                        materials[index] = hasBlending
+                    }
+                }  else if var simpleMat = material as? SimpleMaterial {
+                    updateSimpleMaterial(&simpleMat,
+                                               newOpacity: newOpacity)
+                    materials[index] = simpleMat
+                }
+            }
+        
+        model.materials = materials
+        entity.modelComponent = model
     }
 
     private func setInitialOpacity(mat: HasBlending,
@@ -174,6 +199,36 @@ public class FadeSystem: System {
         }
         
         return checkDirection(mat: mat, fadeComp: &fadeComp, fadeEnt: fadeEnt)
+    }
+    
+    // Components are structs so we must make a copy to modify them.
+    // In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
+    // Therefore we must keep a separate reference to the texture here.
+    private func gatherTextures(on entity: Entity){
+        //Using different kinds of materials across the same Entity is not currently supported.
+        //You may, however, apply different kinds of materials to descendant entities.
+        let modelEnts = entity.findAllHasModelComponent()
+
+        for modelEnt in modelEnts {
+            guard let model = modelEnt.modelComponent else { continue }
+            
+            var customMaterialTextures = [[MaterialTexture: CustomMaterial.Texture]]()
+
+            var pbrMaterialTextures = [[MaterialTexture: PhysicallyBasedMaterial.Texture]]()
+            
+            for material in model.materials {
+                if let customMat = material as? CustomMaterial {
+                    customMaterialTextures.append(customMat.getTextures())
+                } else if let pbrMat = material as? HasPhysicallyBasedTextures {
+                    pbrMaterialTextures.append(pbrMat.getTextures())
+                }
+            }
+            if customMaterialTextures.count > pbrMaterialTextures.count {
+                modelEnt.components.set(CustomTexturesComponent(customMaterialTextures: customMaterialTextures))
+            } else {
+                modelEnt.components.set(PBRTexturesComponent(pbrMaterialTextures: pbrMaterialTextures))
+            }
+        }
     }
     
     private func checkDirection(mat: HasBlending,
@@ -238,36 +293,9 @@ public class FadeSystem: System {
         return (opacity, didFinishFade)
     }
 
-    private func updateMaterial(material: inout HasBlending,
-                                newOpacity: Float,
-                                fadeComp: inout FadeComponent)
-    {
-
-        switch material.opacityBlending {
-        case .opaque:
-            material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
-        case let .transparent(opacity: opacity):
-            // Preserve any opacity textures.
-            if let blendingTexture = fadeComp.blendingTexture {
-                material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: blendingTexture))
-
-            } else if let blendingTexture = opacity.texture {
-                var fadeComp = fadeComp
-                fadeComp.blendingTexture = blendingTexture
-
-                material.opacityBlending = .transparent(opacity: .init(scale: newOpacity, texture: opacity.texture))
-
-            } else {
-                material.opacityBlending = .transparent(opacity: CustomMaterial.Opacity(floatLiteral: newOpacity))
-            }
-        @unknown default:
-            break
-        }
-    }
 
     private func updateSimpleMaterial(_ simpleMat: inout SimpleMaterial,
-                                      newOpacity: Float,
-                                      fadeComp: FadeComponent)
+                                      newOpacity: Float)
     {
         var baseColor = SimpleMaterial.Color.white
         switch simpleMat.baseColor {
@@ -280,7 +308,7 @@ public class FadeSystem: System {
         }
 
         simpleMat.baseColor = .color(baseColor.withAlphaComponent(CGFloat(newOpacity)))
-        simpleMat.tintColor = Material.Color.white.withAlphaComponent(0.995)
+        simpleMat.tintColor = Material.Color.white.withAlphaComponent(CGFloat(newOpacity))
     }
 }
 
@@ -304,7 +332,6 @@ public extension Entity {
                 initialOpacity: Float? = nil,
                 targetOpacity: Float? = nil,
                 recursive: Bool = true,
-                opacityTexture: CustomMaterial.Texture? = nil,
                 completion: (() -> Void)? = nil)
     {
         fade(fadeType: .fadeIn,
@@ -312,7 +339,6 @@ public extension Entity {
              initialOpacity: initialOpacity,
              targetOpacity: targetOpacity,
              recursive: recursive,
-             opacityTexture: opacityTexture,
              completion: completion)
     }
 
@@ -326,7 +352,6 @@ public extension Entity {
                  initialOpacity: Float? = nil,
                  targetOpacity: Float? = nil,
                  recursive: Bool = true,
-                 opacityTexture: CustomMaterial.Texture? = nil,
                  completion: (() -> Void)? = nil)
     {
         fade(fadeType: .fadeOut,
@@ -334,7 +359,6 @@ public extension Entity {
              initialOpacity: initialOpacity,
              targetOpacity: targetOpacity,
              recursive: recursive,
-             opacityTexture: opacityTexture,
              completion: completion)
     }
     
@@ -343,7 +367,6 @@ public extension Entity {
                       initialOpacity: Float?,
                       targetOpacity: Float?,
                       recursive: Bool,
-                      opacityTexture: CustomMaterial.Texture?,
                       completion: (() -> Void)?){
         guard let _ = findEntity(where: { $0.components.has(ModelComponent.self) })
         else {
@@ -362,7 +385,6 @@ public extension Entity {
                                      initialOpacity: initialOpacity,
                                      targetOpacity: targetOpacity,
                                      isRecursive: recursive,
-                                     opacityTexture: opacityTexture,
                                      completion: completion))
     }
 }

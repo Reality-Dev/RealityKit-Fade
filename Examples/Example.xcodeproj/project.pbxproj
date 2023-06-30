@@ -7,9 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		551C2ACD2A4F6ADC0034C02C /* rocket.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 551C2ACC2A4F6ADC0034C02C /* rocket.usdz */; };
+		551C2ACF2A4F6AE00034C02C /* cupcake.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 551C2ACE2A4F6ADF0034C02C /* cupcake.usdz */; };
 		5556FF1B29A01BBD00A2DAA3 /* RKFade in Frameworks */ = {isa = PBXBuildFile; productRef = 5556FF1A29A01BBD00A2DAA3 /* RKFade */; };
 		5556FF2829A01D0C00A2DAA3 /* ARSUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5556FF1F29A01D0C00A2DAA3 /* ARSUIView.swift */; };
-		5556FF2929A01D0C00A2DAA3 /* gold_star.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 5556FF2129A01D0C00A2DAA3 /* gold_star.usdz */; };
 		5556FF2A29A01D0C00A2DAA3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5556FF2229A01D0C00A2DAA3 /* Assets.xcassets */; };
 		5556FF2B29A01D0C00A2DAA3 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5556FF2429A01D0C00A2DAA3 /* Preview Assets.xcassets */; };
 		5556FF2C29A01D0C00A2DAA3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5556FF2529A01D0C00A2DAA3 /* AppDelegate.swift */; };
@@ -21,9 +22,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		551C2ACC2A4F6ADC0034C02C /* rocket.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = rocket.usdz; sourceTree = "<group>"; };
+		551C2ACE2A4F6ADF0034C02C /* cupcake.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = cupcake.usdz; sourceTree = "<group>"; };
 		5556FF1829A01B9B00A2DAA3 /* RKFade */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = RKFade; path = ..; sourceTree = "<group>"; };
 		5556FF1F29A01D0C00A2DAA3 /* ARSUIView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ARSUIView.swift; sourceTree = "<group>"; };
-		5556FF2129A01D0C00A2DAA3 /* gold_star.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = gold_star.usdz; sourceTree = "<group>"; };
 		5556FF2229A01D0C00A2DAA3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5556FF2429A01D0C00A2DAA3 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		5556FF2529A01D0C00A2DAA3 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -48,6 +50,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		551C2AD02A4F6AF60034C02C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				551C2ACC2A4F6ADC0034C02C /* rocket.usdz */,
+				551C2ACE2A4F6ADF0034C02C /* cupcake.usdz */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		5556FF1729A01B9B00A2DAA3 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -68,8 +79,8 @@
 			children = (
 				5556FF1F29A01D0C00A2DAA3 /* ARSUIView.swift */,
 				5556FF2029A01D0C00A2DAA3 /* LICENSE */,
-				5556FF2129A01D0C00A2DAA3 /* gold_star.usdz */,
 				5556FF2229A01D0C00A2DAA3 /* Assets.xcassets */,
+				551C2AD02A4F6AF60034C02C /* Resources */,
 				5556FF2329A01D0C00A2DAA3 /* Preview Content */,
 				5556FF2529A01D0C00A2DAA3 /* AppDelegate.swift */,
 				5556FF2629A01D0C00A2DAA3 /* ContentView.swift */,
@@ -179,11 +190,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				5556FF2B29A01D0C00A2DAA3 /* Preview Assets.xcassets in Resources */,
+				551C2ACF2A4F6AE00034C02C /* cupcake.usdz in Resources */,
 				5556FF3229A01D2900A2DAA3 /* LICENSE-Apple.txt in Resources */,
 				55ECE09C273C853600842DCC /* README.md in Resources */,
 				5556FF2A29A01D0C00A2DAA3 /* Assets.xcassets in Resources */,
 				5556FF3029A01D2100A2DAA3 /* LICENSE.md in Resources */,
-				5556FF2929A01D0C00A2DAA3 /* gold_star.usdz in Resources */,
+				551C2ACD2A4F6ADC0034C02C /* rocket.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -329,6 +341,7 @@
 				DEVELOPMENT_TEAM = 9792AFNZU9;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Example/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Fade;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -351,6 +364,7 @@
 				DEVELOPMENT_TEAM = 9792AFNZU9;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Example/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Fade;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
