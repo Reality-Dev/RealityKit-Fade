@@ -95,17 +95,20 @@ public class FadeSystem: System {
 
             fadeComp.completedDuration += deltaTime
 
-            if fadeComp.didCheckDirection == false,
-               let modelEnt = entity.findFirstHasModelComponent(),
-               let modelComp = modelEnt.modelComponent,
-               let firstMat = modelComp.materials.first(where: {$0 is HasBlending}) as? HasBlending {
-               //Must call `setInitialOpacity` before `updateOpacity` in order to avoid a blink.
-                if !setInitialOpacity(mat: firstMat, fadeComp: &fadeComp, fadeEnt: entity) {
+            if fadeComp.didCheckDirection == false {
+                
+                //Gather textures BEFORE the first material typecast, to make sure the textures do not disappear.
+                gatherTextures(on: entity)
+                
+                if let modelEnt = entity.findFirstHasModelComponent(),
+                   let modelComp = modelEnt.modelComponent,
+                   let firstMat = modelComp.materials.first(where: {$0 is HasBlending}) as? HasBlending,
+                   !setInitialOpacity(mat: firstMat, fadeComp: &fadeComp, fadeEnt: entity){
+                    //Must call `setInitialOpacity` before `updateOpacity` in order to avoid a blink.
                     return
-                } else {
-                    gatherTextures(on: entity)
                 }
             }
+            
             let updates = updateOpacity(entity: entity, fadeComp: fadeComp)
             let didFinishFade = updates.didFinish
             let newOpacity = updates.newOpacity
