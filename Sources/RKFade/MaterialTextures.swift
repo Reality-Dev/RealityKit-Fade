@@ -137,7 +137,7 @@ extension CustomMaterial {
     }
 }
 
-protocol HasPhysicallyBasedTextures: Material {
+public protocol HasPhysicallyBasedTextures: Material {
     var blending: PhysicallyBasedMaterial.Blending { get set }
     
     func getTextures() -> [MaterialTexture: PhysicallyBasedMaterial.Texture]
@@ -171,7 +171,7 @@ extension HasPhysicallyBasedTextures {
 }
 
 extension PhysicallyBasedMaterial: HasPhysicallyBasedTextures {
-    func getTextures() -> [MaterialTexture: PhysicallyBasedMaterial.Texture] {
+    public func getTextures() -> [MaterialTexture: PhysicallyBasedMaterial.Texture] {
 
         //No custom on PhysicallyBasedMaterial.
         let textures: [MaterialTexture: PhysicallyBasedMaterial.Texture] = [
@@ -191,7 +191,7 @@ extension PhysicallyBasedMaterial: HasPhysicallyBasedTextures {
         
         return textures
     }
-    mutating func applyTextures(_ textures: [MaterialTexture: PhysicallyBasedMaterial.Texture]) {
+    public mutating func applyTextures(_ textures: [MaterialTexture: PhysicallyBasedMaterial.Texture]) {
         //No custom on PhysicallyBasedMaterial.
         for texture in textures {
             switch texture.key {
@@ -229,7 +229,7 @@ extension PhysicallyBasedMaterial: HasPhysicallyBasedTextures {
     }
 }
 extension UnlitMaterial: HasPhysicallyBasedTextures {
-    func getTextures() -> [MaterialTexture: PhysicallyBasedMaterial.Texture] {
+    public func getTextures() -> [MaterialTexture: PhysicallyBasedMaterial.Texture] {
         let textures: [MaterialTexture: PhysicallyBasedMaterial.Texture] = [
             .baseColor: color.texture,
             .opacity: blendingTexture,
@@ -237,7 +237,7 @@ extension UnlitMaterial: HasPhysicallyBasedTextures {
         
         return textures
     }
-    mutating func applyTextures(_ textures: [MaterialTexture: PhysicallyBasedMaterial.Texture]) {
+    public mutating func applyTextures(_ textures: [MaterialTexture: PhysicallyBasedMaterial.Texture]) {
         for texture in textures {
             switch texture.key {
             case .baseColor:
