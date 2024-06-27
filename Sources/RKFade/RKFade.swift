@@ -98,7 +98,17 @@ public class FadeSystem: System {
             if fadeComp.didCheckDirection == false {
                 
                 //Gather textures BEFORE the first material typecast, to make sure the textures do not disappear.
-                gatherTextures(on: entity)
+                if fadeComp.isRecursive {
+                    entity.visit {
+                        if $0.components.has(TexturesComponent.self) == false {
+                            $0.gatherTextures()
+                        }
+                    }
+                } else {
+                    if entity.components.has(TexturesComponent.self) == false {
+                        entity.gatherTextures()
+                    }
+                }
                 
                 if let modelEnt = entity.findFirstHasModelComponent(),
                    let modelComp = modelEnt.modelComponent,
@@ -116,9 +126,11 @@ public class FadeSystem: System {
             if fadeComp.isRecursive {
                 entity.visit {
                     updateOpacity(on: $0, newOpacity: newOpacity)
+                    $0.applyTextures()
                 }
             } else {
                 updateOpacity(on: entity, newOpacity: newOpacity)
+                entity.applyTextures()
             }
    
             // Call completion AFTER setting the material in case the completion affects the material.
@@ -133,21 +145,8 @@ public class FadeSystem: System {
     }
     
     private func updateOpacity(on entity: Entity,
-                               newOpacity: Float){
+                               newOpacity: Float) {
         guard var model = entity.modelComponent else {return}
-        
-        //Using different kinds of materials across the same Entity is not currently supported.
-        //You may, however, apply different kinds of materials to descendant entities.
-        
-        var pbrTextures: [[MaterialTexture : PhysicallyBasedMaterial.Texture]]?
-        var customMaterialTextures: [[MaterialTexture: CustomMaterial.Texture]]?
-        
-        if let pbrTexturesComponent = entity.component(forType: PBRTexturesComponent.self){
-            pbrTextures = pbrTexturesComponent.pbrMaterialTextures
-            
-        } else if let customTexturesComponent = entity.component(forType: CustomTexturesComponent.self){
-            customMaterialTextures = customTexturesComponent.customMaterialTextures
-        }
             
             var materials = model.materials
             
@@ -156,19 +155,8 @@ public class FadeSystem: System {
                     
                     hasBlending.opacityScale = newOpacity
                     
-                    if let pbrTextures,
-                       var pbrMat = hasBlending as? HasPhysicallyBasedTextures {
-                        pbrMat.applyTextures(pbrTextures[index])
-                        
-                        materials[index] = pbrMat
-                    } else if let customMaterialTextures,
-                              var customMat = hasBlending as? CustomMaterial {
-                        customMat.applyTextures(customMaterialTextures[index])
-                        
-                        materials[index] = customMat
-                    } else {
-                        materials[index] = hasBlending
-                    }
+                    materials[index] = hasBlending
+
                 }  else if var simpleMat = material as? SimpleMaterial {
                     updateSimpleMaterial(&simpleMat,
                                                newOpacity: newOpacity)
@@ -199,39 +187,7 @@ public class FadeSystem: System {
         
         return checkDirection(mat: mat, fadeComp: &fadeComp, fadeEnt: fadeEnt)
     }
-    
-    // Components are structs so we must make a copy to modify them.
-    // In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
-    // Therefore we must keep a separate reference to the texture here.
-    private func gatherTextures(on entity: Entity){
-        //Using different kinds of materials across the same Entity is not currently supported.
-        //You may, however, apply different kinds of materials to descendant entities.
-        let modelEnts = entity.findAllHasModelComponent()
 
-        for modelEnt in modelEnts {
-            guard
-                modelEnt.components.has(CustomTexturesComponent.self) == false,
-                modelEnt.components.has(PBRTexturesComponent.self) == false,
-                let _ = modelEnt.modelComponent else { continue }
-            
-            var customMaterialTextures = [[MaterialTexture: CustomMaterial.Texture]]()
-
-            var pbrMaterialTextures = [[MaterialTexture: PhysicallyBasedMaterial.Texture]]()
-            
-            for material in modelEnt.modelComponent!.materials {
-                if let customMat = material as? CustomMaterial {
-                    customMaterialTextures.append(customMat.getTextures())
-                } else if let pbrMat = material as? HasPhysicallyBasedTextures {
-                    pbrMaterialTextures.append(pbrMat.getTextures())
-                }
-            }
-            if customMaterialTextures.count > pbrMaterialTextures.count {
-                modelEnt.components.set(CustomTexturesComponent(customMaterialTextures: customMaterialTextures))
-            } else {
-                modelEnt.components.set(PBRTexturesComponent(pbrMaterialTextures: pbrMaterialTextures))
-            }
-        }
-    }
     
     private func checkDirection(mat: HasBlending,
                                 fadeComp: inout FadeComponent,

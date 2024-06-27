@@ -35,12 +35,10 @@ Add the URL of this repository to your Xcode 11+ Project under:
 
 ## Important
 
-Due to a bug in RealityKit with iOS 16, all textures must be cached when animating materials, otherwise they will be lost. This package will cache all textures before performing the first fade, and store them in one or both of these two kinds of components for all future fades:
-- CustomTexturesComponent
-- PBRTexturesComponent
+Due to a bug in RealityKit with iOS 16, all textures must be cached when animating materials, otherwise they will be lost. This package will cache all textures before performing the first fade, and store them in a `TexturesComponent` for all future fades
 `CustomMaterial` uses `CustomMaterial.CustomMaterialTexture` for its textures,
-and `UnlitMaterial` and `PhysicallyBasedMaterial` use `MaterialParameters.Texture` (there are type aliases as well). Thus we must handle them separately.
-I tried removing these components at the end of the fade, but then at the start of the next fade the textures were gone again.
+and `UnlitMaterial` and `PhysicallyBasedMaterial` use `MaterialParameters.Texture` (there are type aliases as well).
+I tried removing the `TexturesComponent` at the end of the fade, but then at the start of the next fade the textures were gone again.
 If you wish to modify the textures between fades, try modifying the textures cached inside of the component.
 
 ## More

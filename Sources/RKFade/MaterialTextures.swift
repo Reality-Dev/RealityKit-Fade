@@ -21,23 +21,26 @@ extension Registerable {
     }
 }
 
-public struct CustomTexturesComponent: Registerable {
-    internal static var isRegistered = false
-    
-    var customMaterialTextures: [[MaterialTexture: CustomMaterial.Texture]]
-    
-    public init(customMaterialTextures: [[MaterialTexture : CustomMaterial.Texture]]) {
-        self.customMaterialTextures = customMaterialTextures
-        register()
-    }
+public enum MaterialTextureCache {
+    case pbr(PBRMaterialTextureCache)
+    case custom(CustomMaterialTextureCache)
 }
-public struct PBRTexturesComponent: Registerable {
+
+public struct PBRMaterialTextureCache {
+    var cache: [MaterialTexture: PhysicallyBasedMaterial.Texture]
+}
+
+public struct CustomMaterialTextureCache {
+    var cache: [MaterialTexture: CustomMaterial.Texture]
+}
+
+public struct TexturesComponent: Registerable {
     internal static var isRegistered = false
     
-    var pbrMaterialTextures: [[MaterialTexture: PhysicallyBasedMaterial.Texture]]
+    var materialTextures: [MaterialTextureCache]
     
-    public init(pbrMaterialTextures: [[MaterialTexture : PhysicallyBasedMaterial.Texture]]) {
-        self.pbrMaterialTextures = pbrMaterialTextures
+    public init(materialTextures: [MaterialTextureCache]) {
+        self.materialTextures = materialTextures
         register()
     }
 }
@@ -59,8 +62,71 @@ public enum MaterialTexture: CaseIterable {
         case specular
 }
 
-//PhysicallyBasedMaterial and UnlitMaterial use the same underlying type for their textures, so we can combine them into one protocol.
-//However, CustomMaterial uses a different type for its textures, so we must handle this case separately.
+public extension Entity {
+    // Components are structs so we must make a copy to modify them.
+    // In iOS 16 there is a bug where copying a CustomMaterial to a new `var` will remove the textures from the material.
+    // Therefore we must keep a separate reference to the texture here.
+    func gatherTextures() {
+        guard components.has(ModelComponent.self) else { return }
+        
+        var materialTextures = [MaterialTextureCache]()
+        
+        for material in modelComponent!.materials {
+            if let customMat = material as? CustomMaterial {
+                materialTextures.append(.custom(.init(cache: customMat.getTextures())))
+                
+            } else if let pbrMat = material as? HasPhysicallyBasedTextures {
+                materialTextures.append(.pbr(.init(cache: pbrMat.getTextures())))
+            }
+        }
+        
+        components.set(TexturesComponent(materialTextures: materialTextures))
+    }
+    
+    func applyTextures(){
+        guard var model = modelComponent else {return}
+        
+        guard let texturesComponent = component(forType: TexturesComponent.self) else {return}
+            
+            var materials = model.materials
+            
+            for (index, material) in materials.enumerated() {
+                if let hasBlending = material as? HasBlending {
+                    
+                    if var pbrMat = hasBlending as? HasPhysicallyBasedTextures {
+                        
+                        switch texturesComponent.materialTextures[index] {
+                        case let .pbr(textureCache):
+                            pbrMat.applyTextures(textureCache.cache)
+                            
+                            materials[index] = pbrMat
+                        default:
+                            assertionFailure("Material type mismatch. Expected HasPhysicallyBasedTextures at index \(index)")
+                            continue
+                        }
+                        
+                    } else if var customMat = hasBlending as? CustomMaterial {
+                        switch texturesComponent.materialTextures[index] {
+                        case let .custom(textureCache):
+                            customMat.applyTextures(textureCache.cache)
+                            
+                            materials[index] = customMat
+                        default:
+                            assertionFailure("Material type mismatch. Expected CustomMaterial at index \(index)")
+                            continue
+                        }
+                    }
+                }
+            }
+        
+        model.materials = materials
+        
+        modelComponent = model
+    }
+}
+
+// PhysicallyBasedMaterial and UnlitMaterial use the same underlying type for their textures, so we can combine them into one protocol.
+// However, CustomMaterial uses a different type for its textures, so we must handle this case separately.
 
 extension CustomMaterial {
     private var blendingTexture: CustomMaterial.Texture? {

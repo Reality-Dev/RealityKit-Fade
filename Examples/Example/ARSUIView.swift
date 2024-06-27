@@ -10,6 +10,9 @@ import RKAssetLoading
 import RKFade
 
 class ARSUIView: ARView {
+    
+    private var fadedOut = false
+    
     override func didMoveToSuperview() {
         super.didMoveToSuperview()
 
@@ -45,28 +48,21 @@ class ARSUIView: ARView {
     }
 
     func fadeInAndOut(entity: Entity,
-                      fadeDuration: TimeInterval = 1,
-                      fadeIn: Bool = false)
+                      fadeDuration: TimeInterval = 1)
     {
-        if fadeIn {
-            entity.fadeIn(duration: fadeDuration) { [weak entity, weak self] in
-                guard
-                    let entity = entity,
-                    let self = self
-                else { return }
-                self.fadeInAndOut(entity: entity,
-                                  fadeDuration: fadeDuration,
-                                  fadeIn: false)
-            }
-        } else {
-            entity.fadeOut(duration: fadeDuration) { [weak entity, weak self] in
-                guard
-                    let entity = entity,
-                    let self = self
-                else { return }
-                self.fadeInAndOut(entity: entity,
-                                  fadeDuration: fadeDuration,
-                                  fadeIn: true)
+        Timer.scheduledTimer(withTimeInterval: fadeDuration + 0.1, repeats: true) { [weak self] _ in
+            let fadedOut = self?.fadedOut ?? true
+            
+            if fadedOut {
+                entity.fadeIn(duration: fadeDuration) { [weak self] in
+                    print("Finished fade in")
+                    self?.fadedOut = false
+                }
+            } else {
+                entity.fadeOut(duration: fadeDuration) { [weak self] in
+                    print("Finished fade out")
+                    self?.fadedOut = true
+                }
             }
         }
     }
