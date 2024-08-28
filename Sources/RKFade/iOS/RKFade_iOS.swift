@@ -109,8 +109,9 @@ public class FadeSystem: System {
                 if let modelEnt = entity.findFirstHasModelComponent(),
                    let modelComp = modelEnt.modelComponent,
                    let firstMat = modelComp.materials.first(where: {$0 is HasBlending}) as? HasBlending,
-                   !setInitialOpacity(mat: firstMat, fadeComp: &fadeComp, fadeEnt: entity){
+                   setInitialOpacity(mat: firstMat, fadeComp: &fadeComp, fadeEnt: entity){
                     //Must call `setInitialOpacity` before `updateOpacity` in order to avoid a blink.
+                    entity.components.set(fadeComp)
                     return
                 }
             }
@@ -167,7 +168,7 @@ public class FadeSystem: System {
     private func setInitialOpacity(mat: HasBlending,
                                    fadeComp: inout FadeComponent,
                                    fadeEnt: Entity) -> Bool {
-        guard fadeComp.didCheckDirection == false else { return true }
+        guard fadeComp.didCheckDirection == false else { return false }
 
         if fadeComp.initialOpacity == nil {
             //If the initialOpacity was not set manually by the user, read what the current opacity scale is of the material.

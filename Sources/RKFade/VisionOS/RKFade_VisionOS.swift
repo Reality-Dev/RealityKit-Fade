@@ -31,6 +31,7 @@ public struct FadeComponent: Component {
                      duration: TimeInterval = 5,
                      initialOpacity: Float?,
                      targetOpacity: Float?,
+                     // TODO: Add async-await support.
                      completion: (() -> Void)?)
     {
         self.fadeType = fadeType
@@ -84,6 +85,7 @@ public class FadeSystem: System {
             
             if setInitialOpacity(fadeComp: &fadeComp, fadeEnt: entity) {
                 // Must call `setInitialOpacity` before `updateOpacity` in order to avoid a blink.
+                entity.components.set(fadeComp)
                 return
             }
             
@@ -110,7 +112,6 @@ public class FadeSystem: System {
     private func setInitialOpacity(fadeComp: inout FadeComponent,
                                    fadeEnt: Entity) -> Bool {
         guard fadeComp.didCheckDirection == false else { return false }
-        
         if fadeComp.initialOpacity == nil {
             //If the initialOpacity was not set manually by the user, read what the current opacity scale is of the material.
             switch fadeComp.fadeType {
@@ -125,7 +126,7 @@ public class FadeSystem: System {
             }
         }
         
-        return !checkDirection(fadeComp: &fadeComp, fadeEnt: fadeEnt)
+        return checkDirection(fadeComp: &fadeComp, fadeEnt: fadeEnt)
     }
     
     
