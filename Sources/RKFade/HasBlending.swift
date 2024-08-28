@@ -1,9 +1,4 @@
-//
-//  HasBlending.swift
-//  RKFade
-//
-//  Created by Grant Jarvis on 9/22/22.
-//
+#if !os(visionOS)
 import RealityKit
 
 public protocol HasBlending: RealityKit.Material {
@@ -70,5 +65,4 @@ extension UnlitMaterial: HasBlending {
         }
     }
 }
-
-
+#endif

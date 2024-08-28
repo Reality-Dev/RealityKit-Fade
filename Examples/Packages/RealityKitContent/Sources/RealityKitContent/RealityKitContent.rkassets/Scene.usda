@@ -1,0 +1,81 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    reorder nameChildren = ["GridMaterial", "Sphere"]
+    rel material:binding = None (
+        bindMaterialAs = "weakerThanDescendants"
+    )
+
+    def "cupcake" (
+        active = true
+        prepend references = @cupcake.usdz@
+    )
+    {
+        float3 xformOp:scale = (1, 1, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        over "Scenes"
+        {
+            over "Scene"
+            {
+                uniform token preliminary:anchoring:type = None
+            }
+        }
+    }
+
+    def "rocket" (
+        active = true
+        prepend references = @rocket.usdz@
+    )
+    {
+        float3 xformOp:scale = (1, 1, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        over "Scenes"
+        {
+            over "Scene"
+            {
+                uniform token preliminary:anchoring:type = None
+
+                over "Children"
+                {
+                    over "_7F54CD162DF44F2E8C7214EB22664DB8"
+                    {
+                        over "Children"
+                        {
+                            over "item"
+                            {
+                                over "Generated"
+                                {
+                                    over "Conversion"
+                                    {
+                                        over "References"
+                                        {
+                                            over "toy_rocket"
+                                            {
+                                                over "geom"
+                                                {
+                                                    over "stylized"
+                                                    {
+                                                        token visibility = "visible"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

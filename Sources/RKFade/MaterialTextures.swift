@@ -1,10 +1,4 @@
-//
-//  MaterialTextures.swift
-//  
-//
-//  Created by Grant Jarvis on 6/30/23.
-//
-
+#if !os(visionOS)
 import RealityKit
 
 protocol Registerable: Component {
@@ -316,3 +310,4 @@ extension UnlitMaterial: HasPhysicallyBasedTextures {
         }
     }
 }
+#endif
