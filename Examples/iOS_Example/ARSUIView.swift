@@ -35,10 +35,35 @@ class ARSUIView: ARView {
             // rocket.fadeOut()
 
             // Here is a way to repeatedly fade an entity in and out:
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5){
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self?.fadeInAndOut(entity: rocket)
             }
         }
+        
+        // UnlitMaterial example.
+        let cube = makeBox()
+        cube.position.x = -0.5
+        addEntityToScene(cube)
+        
+        // Here is a way to repeatedly fade an entity in and out:
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.fadeInAndOut(entity: cube)
+        }
+    }
+    
+    private func makeBox(color: SimpleMaterial.Color = .blue,
+                         size: simd_float3 = .one / 6.8,
+                         isMetallic: Bool = true) -> ModelEntity {
+        
+        let boxMesh = MeshResource.generateBox(size: size, cornerRadius: 0.08)
+        var boxMaterial = UnlitMaterial.init(color: color)
+        
+        // -- IMPORTANT --
+        // For some reason, UnlitMaterial has to use .transparent blending BEFORE it is set on the Entity for it to work properly.
+        boxMaterial.blending = .transparent(opacity: 0.8)
+        
+        return ModelEntity(mesh: boxMesh,
+                           materials: [boxMaterial])
     }
 
     func fadeInAndOut(entity: Entity,
