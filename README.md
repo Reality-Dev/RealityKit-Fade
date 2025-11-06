@@ -2,8 +2,9 @@
 
 This package enables easy, convenient fading in and fading out in RealityKit.
 
-> [!NOTE]
 > Now with visionOS support!
+> On visionOS, `OpacityComponent` is used, so most of the issues below do not apply.
+> On iOS, the `blending` property of the material is used.
 
 SimpleMaterial will not work - Materials must be PhysicallyBased, Custom, or Unlit.
 You can use this to see what kinds of materials your entity uses:
