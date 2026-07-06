@@ -31,7 +31,7 @@ public struct FadeComponent: Component {
                      duration: TimeInterval = 5,
                      initialOpacity: Float?,
                      targetOpacity: Float?,
-                     // TODO: Add async-await support.
+                     // TODO: Add async-await concurrency support.
                      completion: (() -> Void)?)
     {
         self.fadeType = fadeType
