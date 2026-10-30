@@ -5,7 +5,13 @@ import PackageDescription
 
 let package = Package(
     name: "RKFade",
-    platforms: [.iOS("15.0"), .macOS("12.0")],
+    platforms: [
+        .iOS("15.0"),
+        .macOS("12.0"),
+        .macCatalyst("15.0"),
+        .tvOS("26.0"),
+        .visionOS("1.0"),
+    ],
     products: [
         .library(name: "RKFade", targets: ["RKFade"]),
     ],
